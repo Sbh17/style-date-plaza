@@ -71,6 +71,8 @@ const StylistProfiles: React.FC = () => {
     specialties: string[];
     bio: string;
     image: string;
+    rating: number;
+    reviewCount: number;
     social: {
       instagram: string;
       facebook: string;
