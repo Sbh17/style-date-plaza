@@ -1,18 +1,21 @@
 
-import React, { useState } from 'react';
-import { User, LogOut, Settings, CreditCard, Heart, Bell } from 'lucide-react';
+import React from 'react';
+import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Link } from 'react-router-dom';
 
 const menuItems = [
   {
     icon: Settings,
     label: 'Account Settings',
-    href: '#',
+    href: '/settings',
   },
   {
     icon: CreditCard,
@@ -32,16 +35,10 @@ const menuItems = [
 ];
 
 const Profile: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const { theme, toggleTheme } = useTheme();
+  const { user, isAdmin, logout, goToAdmin } = useAuth();
   
-  // Mock user data
-  const user = {
-    name: 'Emma Johnson',
-    email: 'emma.johnson@example.com',
-    profileImage: 'https://i.pravatar.cc/300',
-  };
-
   return (
     <Layout>
       <div className="space-y-6">
@@ -54,16 +51,23 @@ const Profile: React.FC = () => {
         
         <div className="glass rounded-xl p-4 flex flex-col items-center text-center animate-slide-up">
           <Avatar className="h-20 w-20 border-2 border-white">
-            <AvatarImage src={user.profileImage} alt={user.name} />
+            <AvatarImage src={user?.profileImage} alt={user?.name} />
             <AvatarFallback>
               <User className="h-8 w-8" />
             </AvatarFallback>
           </Avatar>
-          <h2 className="mt-3 font-semibold text-lg">{user.name}</h2>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-          <Button variant="outline" className="mt-3">
-            Edit Profile
-          </Button>
+          <h2 className="mt-3 font-semibold text-lg">{user?.name}</h2>
+          <p className="text-sm text-muted-foreground">{user?.email}</p>
+          <div className="flex gap-2 mt-3">
+            <Button variant="outline" asChild>
+              <Link to="/settings">Edit Profile</Link>
+            </Button>
+            {isAdmin && (
+              <Button variant="default" onClick={goToAdmin}>
+                Admin Dashboard
+              </Button>
+            )}
+          </div>
         </div>
         
         <div className="space-y-4">
@@ -71,9 +75,9 @@ const Profile: React.FC = () => {
           
           <div className="space-y-2">
             {menuItems.map((item, index) => (
-              <a
+              <Link
                 key={index}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   "flex items-center justify-between p-3 rounded-lg border border-border",
                   "hover:border-primary/50 transition-all duration-200"
@@ -83,7 +87,8 @@ const Profile: React.FC = () => {
                   <item.icon className="h-5 w-5 mr-3 text-muted-foreground" />
                   <span>{item.label}</span>
                 </div>
-              </a>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
             ))}
           </div>
           
@@ -105,8 +110,8 @@ const Profile: React.FC = () => {
                 <span>Dark Mode</span>
               </div>
               <Switch 
-                checked={darkModeEnabled} 
-                onCheckedChange={setDarkModeEnabled} 
+                checked={theme === 'dark'} 
+                onCheckedChange={toggleTheme} 
               />
             </div>
           </div>
@@ -114,7 +119,11 @@ const Profile: React.FC = () => {
         
         <Separator />
         
-        <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
+        <Button 
+          variant="outline" 
+          className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+          onClick={logout}
+        >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
         </Button>
