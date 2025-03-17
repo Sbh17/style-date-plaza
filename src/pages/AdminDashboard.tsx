@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { 
   Shield, Edit, Trash, Plus, Settings, MapPin, Clock, Phone, 
-  Image as ImageIcon, CalendarCheck, Calendar, Bell, CheckCheck, X as XIcon
+  Image as ImageIcon, CalendarCheck, Calendar, Bell, CheckCheck, X as XIcon,
+  ImagePlus, PlusCircle
 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Mock salon data - would come from database in real implementation
 const MOCK_SALON = {
   id: "1",
   name: "Elegance Beauty Salon",
@@ -67,8 +66,9 @@ const AdminDashboard: React.FC = () => {
   const [messageText, setMessageText] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [isAddingImage, setIsAddingImage] = useState(false);
 
-  // Get today's appointments
   const today = new Date().toISOString().split('T')[0];
   const todaysAppointments = salon.appointments.filter(
     appointment => appointment.date.startsWith(today)
@@ -169,7 +169,6 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    // In a real app, this would send an email or SMS
     console.log(`Sending message to ${selectedAppointment.customer}: ${messageText}`);
     
     toast.success(`Notification sent to ${selectedAppointment.customer}`);
@@ -177,7 +176,39 @@ const AdminDashboard: React.FC = () => {
     setIsNotificationDialogOpen(false);
   };
 
-  // Format date for display
+  const handleAddImage = () => {
+    if (!newImageUrl) {
+      toast.error('Please enter an image URL');
+      return;
+    }
+    
+    try {
+      new URL(newImageUrl);
+    } catch (error) {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+    
+    const updatedSalon = {
+      ...salon,
+      images: [...salon.images, newImageUrl]
+    };
+    
+    setSalon(updatedSalon);
+    setNewImageUrl('');
+    setIsAddingImage(false);
+    toast.success('Image added successfully!');
+  };
+
+  const handleDeleteImage = (imageIndex: number) => {
+    const updatedImages = salon.images.filter((_, index) => index !== imageIndex);
+    setSalon({
+      ...salon,
+      images: updatedImages
+    });
+    toast.success('Image removed successfully!');
+  };
+
   const formatAppointmentDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       weekday: 'short',
@@ -328,38 +359,87 @@ const AdminDashboard: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ImageIcon className="mr-2 h-5 w-5" />
-                  Salon Images
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <ImageIcon className="mr-2 h-5 w-5" />
+                    Salon Gallery
+                  </CardTitle>
+                  <Dialog open={isAddingImage} onOpenChange={setIsAddingImage}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <ImagePlus className="h-4 w-4 mr-1" />
+                        Add Image
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Gallery Image</DialogTitle>
+                        <DialogDescription>
+                          Add a new image to showcase your salon's work
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="imageUrl">Image URL</Label>
+                          <Input 
+                            id="imageUrl" 
+                            value={newImageUrl} 
+                            onChange={e => setNewImageUrl(e.target.value)}
+                            placeholder="https://example.com/image.jpg" 
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter the URL of the image you want to add to your gallery.
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddingImage(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddImage}>
+                          Add Image
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <CardDescription>
-                  Manage your salon's photos
+                  Showcase your salon's work with high-quality images
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {salon.images.map((image, index) => (
-                    <div key={index} className="relative group">
+                    <div key={index} className="relative group aspect-[4/3]">
                       <img 
                         src={image} 
                         alt={`Salon image ${index + 1}`} 
-                        className="h-32 w-full object-cover rounded-md"
+                        className="h-full w-full object-cover rounded-md"
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
-                        <Button variant="destructive" size="sm">
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteImage(index)}>
                           <Trash className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   ))}
-                  <div className="h-32 border-2 border-dashed border-muted-foreground/20 rounded-md flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                    <div className="flex flex-col items-center text-muted-foreground">
-                      <Plus className="h-6 w-6" />
-                      <span className="text-xs mt-1">Add Image</span>
-                    </div>
-                  </div>
+                  <Dialog open={isAddingImage} onOpenChange={setIsAddingImage}>
+                    <DialogTrigger asChild>
+                      <div className="aspect-[4/3] border-2 border-dashed border-muted-foreground/20 rounded-md flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <div className="flex flex-col items-center text-muted-foreground">
+                          <ImagePlus className="h-6 w-6" />
+                          <span className="text-xs mt-1">Add Image</span>
+                        </div>
+                      </div>
+                    </DialogTrigger>
+                  </Dialog>
                 </div>
               </CardContent>
+              <CardFooter>
+                <p className="text-xs text-muted-foreground">
+                  Showcase your salon's best work. Images should be high quality and represent your services.
+                </p>
+              </CardFooter>
             </Card>
           </TabsContent>
           
@@ -371,7 +451,7 @@ const AdminDashboard: React.FC = () => {
                   <Dialog open={isAddingService} onOpenChange={setIsAddingService}>
                     <DialogTrigger asChild>
                       <Button size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
+                        <PlusCircle className="h-4 w-4 mr-1" />
                         Add Service
                       </Button>
                     </DialogTrigger>
@@ -461,6 +541,11 @@ const AdminDashboard: React.FC = () => {
                   </TableBody>
                 </Table>
               </CardContent>
+              <CardFooter>
+                <p className="text-sm text-muted-foreground">
+                  Add all the services your salon offers to make them available for booking.
+                </p>
+              </CardFooter>
             </Card>
           </TabsContent>
           
@@ -734,7 +819,6 @@ const AdminDashboard: React.FC = () => {
         </Tabs>
       </div>
 
-      {/* Notification Dialog */}
       <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
         <DialogContent>
           <DialogHeader>
