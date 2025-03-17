@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import BottomNavigation from './BottomNavigation';
 import ViewCodeButton from './ViewCodeButton';
 import { Button } from './ui/button';
@@ -35,13 +35,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex flex-col h-full w-full bg-background">
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1.5">
-            <LogIn className="h-4 w-4" />
-            <span>Sign In</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1.5"
+            asChild
+          >
+            <Link to="/sign-in">
+              <LogIn className="h-4 w-4" />
+              <span>Sign In</span>
+            </Link>
           </Button>
-          <Button variant="default" size="sm" className="flex items-center gap-1.5">
-            <UserPlus className="h-4 w-4" />
-            <span>Sign Up</span>
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="flex items-center gap-1.5"
+            asChild
+          >
+            <Link to="/sign-up">
+              <UserPlus className="h-4 w-4" />
+              <span>Sign Up</span>
+            </Link>
           </Button>
         </div>
         <ViewCodeButton />

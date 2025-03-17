@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Locate } from 'lucide-react';
 import SalonCard from '@/components/SalonCard';
@@ -91,7 +92,7 @@ const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [salons, setSalons] = useState(MOCK_SALONS);
-  const { loading: geoLoading, position, error } = useGeolocation();
+  const { loading: geoLoading, position, error, getPosition } = useGeolocation({ autoRequest: true });
   
   // Simulate loading
   useEffect(() => {
@@ -101,14 +102,23 @@ const Index: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto find nearby salons when position is available
+  useEffect(() => {
+    if (position && !loading) {
+      findNearbySalons();
+    }
+  }, [position, loading]);
+
   // Find nearby salons
   const findNearbySalons = () => {
     if (!position) {
-      toast({
-        title: "Location not available",
-        description: "Please allow location access to find nearby salons",
-        variant: "destructive",
-      });
+      if (!geoLoading) {
+        toast({
+          title: "Location not available",
+          description: "Please allow location access to find nearby salons",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -192,7 +202,7 @@ const Index: React.FC = () => {
         
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <h2 className="font-medium">Featured Salons</h2>
+            <h2 className="font-medium">{position ? "Nearby Salons" : "Featured Salons"}</h2>
             <Button variant="link" className="text-sm p-0 h-auto text-primary">
               See All
             </Button>
@@ -229,26 +239,40 @@ const Index: React.FC = () => {
         </div>
         
         <div className="space-y-1">
-          <h2 className="font-medium">Near You</h2>
+          <h2 className="font-medium">Your Location</h2>
           <div className="glass rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-primary/10 p-2 rounded-full">
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Find Nearby Salons</p>
-                <p className="text-xs text-muted-foreground">Use your current location</p>
+                <p className="text-sm font-medium">
+                  {geoLoading 
+                    ? "Detecting your location..." 
+                    : position 
+                      ? "Location detected" 
+                      : "Location access needed"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {position 
+                    ? "Showing salons near you" 
+                    : "Allow location access to find nearby salons"}
+                </p>
               </div>
             </div>
             <Button 
               size="sm" 
-              variant="default"
+              variant={position ? "outline" : "default"}
               onClick={findNearbySalons}
               disabled={geoLoading}
               className="flex items-center gap-1.5"
             >
               <Locate className="h-4 w-4" />
-              {geoLoading ? "Locating..." : "Locate Me"}
+              {geoLoading 
+                ? "Locating..." 
+                : position 
+                  ? "Refresh" 
+                  : "Enable Location"}
             </Button>
           </div>
         </div>
