@@ -110,6 +110,8 @@ const Settings: React.FC = () => {
                   <SelectItem value="french">French</SelectItem>
                   <SelectItem value="german">German</SelectItem>
                   <SelectItem value="japanese">Japanese</SelectItem>
+                  <SelectItem value="hebrew">Hebrew</SelectItem>
+                  <SelectItem value="arabic">Arabic</SelectItem>
                 </SelectContent>
               </Select>
             </div>
