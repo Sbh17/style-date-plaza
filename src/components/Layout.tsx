@@ -2,6 +2,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import BottomNavigation from './BottomNavigation';
+import ViewCodeButton from './ViewCodeButton';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
+      <ViewCodeButton />
       <main id="main-content" className="flex-1 flex flex-col overflow-auto pb-16">
         <div className="px-4 pt-4 pb-20 md:px-6 md:pt-6 h-full">
           {children}
