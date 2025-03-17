@@ -13,6 +13,11 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import AdminDashboard from "./pages/AdminDashboard";
+import Reviews from "./pages/Reviews";
+import Analytics from "./pages/Analytics";
+import Promotions from "./pages/Promotions";
+import StylistProfiles from "./pages/StylistProfiles";
+import LoyaltyProgram from "./pages/LoyaltyProgram";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +36,11 @@ const App = () => (
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/reviews" element={<Reviews />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/promotions" element={<Promotions />} />
+          <Route path="/stylists" element={<StylistProfiles />} />
+          <Route path="/loyalty" element={<LoyaltyProgram />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
