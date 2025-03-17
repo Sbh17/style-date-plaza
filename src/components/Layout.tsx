@@ -4,7 +4,7 @@ import { useLocation, Link } from 'react-router-dom';
 import BottomNavigation from './BottomNavigation';
 import ViewCodeButton from './ViewCodeButton';
 import { Button } from './ui/button';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Shield } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -58,7 +58,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Link>
           </Button>
         </div>
-        <ViewCodeButton />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1.5"
+            asChild
+          >
+            <Link to="/admin">
+              <Shield className="h-4 w-4" />
+              <span>Admin</span>
+            </Link>
+          </Button>
+          <ViewCodeButton />
+        </div>
       </div>
       <main id="main-content" className="flex-1 flex flex-col overflow-auto pb-16">
         <div className="px-4 pt-4 pb-20 md:px-6 md:pt-6 h-full">
