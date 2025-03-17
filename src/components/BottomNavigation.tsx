@@ -36,7 +36,7 @@ const BottomNavigation: React.FC = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-10 glass border-t border-secondary">
+    <div className="fixed bottom-0 left-0 right-0 z-10 backdrop-blur-sm bg-background/95 border-t border-secondary shadow-lg">
       <nav className="flex justify-around py-3">
         {navItems.map((item) => (
           <Link

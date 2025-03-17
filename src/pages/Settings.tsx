@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, Bell, Globe, Lock, Shield } from 'lucide-react';
+import { Moon, Sun, Bell, Globe, Lock, Shield, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
@@ -14,19 +14,28 @@ const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [language, setLanguage] = React.useState('english');
+  const [changesMade, setChangesMade] = React.useState(false);
 
+  // Create a ref for directions based on language
+  const isRtl = language === 'hebrew' || language === 'arabic';
+  
   const handleSaveChanges = () => {
     toast.success('Settings saved successfully');
+    setChangesMade(false);
   };
 
   const handleLanguageChange = (value: string) => {
     setLanguage(value);
+    setChangesMade(true);
     toast.success(`Language changed to ${value.charAt(0).toUpperCase() + value.slice(1)}`);
+    
+    // Apply RTL direction if needed
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
   };
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-2xl mx-auto">
+      <div className="space-y-6 max-w-2xl mx-auto pb-24">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold antialiased">Settings</h1>
           <p className="text-muted-foreground text-sm">
@@ -114,6 +123,13 @@ const Settings: React.FC = () => {
                   <SelectItem value="arabic">Arabic</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {isRtl && (
+                <div className="mt-2 flex items-center text-sm text-amber-600 dark:text-amber-500">
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>RTL writing direction will be applied on save</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -151,8 +167,12 @@ const Settings: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
-          <Button onClick={handleSaveChanges}>
+        <div className="sticky bottom-20 bg-background z-10 pt-4 mt-8 border-t flex justify-end">
+          <Button 
+            onClick={handleSaveChanges} 
+            disabled={!changesMade}
+            className="px-6"
+          >
             Save Changes
           </Button>
         </div>
