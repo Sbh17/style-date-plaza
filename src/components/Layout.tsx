@@ -3,6 +3,8 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import BottomNavigation from './BottomNavigation';
 import ViewCodeButton from './ViewCodeButton';
+import { Button } from './ui/button';
+import { LogIn, UserPlus } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,7 +33,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
-      <ViewCodeButton />
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex items-center gap-1.5">
+            <LogIn className="h-4 w-4" />
+            <span>Sign In</span>
+          </Button>
+          <Button variant="default" size="sm" className="flex items-center gap-1.5">
+            <UserPlus className="h-4 w-4" />
+            <span>Sign Up</span>
+          </Button>
+        </div>
+        <ViewCodeButton />
+      </div>
       <main id="main-content" className="flex-1 flex flex-col overflow-auto pb-16">
         <div className="px-4 pt-4 pb-20 md:px-6 md:pt-6 h-full">
           {children}

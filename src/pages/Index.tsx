@@ -1,11 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Locate } from 'lucide-react';
 import SalonCard from '@/components/SalonCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Layout from '@/components/Layout';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { toast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 // Mock data
 const MOCK_SALONS = [
@@ -61,10 +63,35 @@ const CATEGORIES = [
   { id: "waxing", name: "Waxing" }
 ];
 
+// Function to calculate distance between two coordinates (in km)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180; 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+};
+
+// Mock coordinates for salons
+const SALON_COORDINATES = {
+  "1": { lat: 40.7128, lng: -74.0060 }, // New York
+  "2": { lat: 34.0522, lng: -118.2437 }, // Los Angeles
+  "3": { lat: 41.8781, lng: -87.6298 }, // Chicago
+  "4": { lat: 29.7604, lng: -95.3698 }, // Houston
+};
+
 const Index: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [salons, setSalons] = useState(MOCK_SALONS);
+  const { loading: geoLoading, position, error } = useGeolocation();
   
   // Simulate loading
   useEffect(() => {
@@ -73,6 +100,53 @@ const Index: React.FC = () => {
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Find nearby salons
+  const findNearbySalons = () => {
+    if (!position) {
+      toast({
+        title: "Location not available",
+        description: "Please allow location access to find nearby salons",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    // Sort salons by distance
+    const salonsWithDistance = MOCK_SALONS.map(salon => {
+      const coords = SALON_COORDINATES[salon.id as keyof typeof SALON_COORDINATES];
+      if (coords && position) {
+        const distance = calculateDistance(
+          position.latitude, 
+          position.longitude, 
+          coords.lat, 
+          coords.lng
+        );
+        return {
+          ...salon,
+          distance: `${distance.toFixed(1)} km`,
+          distanceValue: distance
+        };
+      }
+      return { ...salon, distanceValue: 9999 };
+    });
+
+    // Sort by distance
+    const sortedSalons = salonsWithDistance.sort((a, b) => {
+      return (a.distanceValue || 9999) - (b.distanceValue || 9999);
+    });
+
+    setTimeout(() => {
+      setSalons(sortedSalons);
+      setLoading(false);
+      toast({
+        title: "Nearby salons found",
+        description: "Showing salons closest to your location",
+      });
+    }, 1000);
+  };
 
   return (
     <Layout>
@@ -136,7 +210,7 @@ const Index: React.FC = () => {
                 </div>
               ))
             ) : (
-              MOCK_SALONS.map((salon) => (
+              salons.slice(0, 4).map((salon) => (
                 <SalonCard
                   key={salon.id}
                   id={salon.id}
@@ -162,12 +236,31 @@ const Index: React.FC = () => {
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Current Location</p>
-                <p className="text-xs text-muted-foreground">12 salons nearby</p>
+                <p className="text-sm font-medium">Find Nearby Salons</p>
+                <p className="text-xs text-muted-foreground">Use your current location</p>
               </div>
             </div>
-            <Button size="sm" variant="default">
-              View Map
+            <Button 
+              size="sm" 
+              variant="default"
+              onClick={findNearbySalons}
+              disabled={geoLoading}
+              className="flex items-center gap-1.5"
+            >
+              <Locate className="h-4 w-4" />
+              {geoLoading ? "Locating..." : "Locate Me"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col items-center">
+          <p className="text-sm text-muted-foreground mb-2">New to StyleDate?</p>
+          <div className="flex gap-2 w-full">
+            <Button asChild variant="outline" className="flex-1">
+              <Link to="/sign-in">Sign In</Link>
+            </Button>
+            <Button asChild className="flex-1">
+              <Link to="/sign-up">Sign Up</Link>
             </Button>
           </div>
         </div>
