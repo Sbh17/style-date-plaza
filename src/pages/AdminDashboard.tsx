@@ -1,6 +1,9 @@
 
 import React, { useState } from 'react';
-import { Shield, Edit, Trash, Plus, Settings, MapPin, Clock, Phone, Image as ImageIcon, CalendarCheck } from 'lucide-react';
+import { 
+  Shield, Edit, Trash, Plus, Settings, MapPin, Clock, Phone, 
+  Image as ImageIcon, CalendarCheck, Calendar, Bell, CheckCheck, X as XIcon
+} from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Mock salon data - would come from database in real implementation
 const MOCK_SALON = {
@@ -37,18 +43,36 @@ const MOCK_SALON = {
     "https://images.unsplash.com/photo-1470259078422-826894b933aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80"
   ],
   appointments: [
-    { id: "a1", customer: "Jennifer Smith", service: "Haircut & Style", date: "2023-10-15T10:00:00", status: "completed" },
-    { id: "a2", customer: "Michael Brown", service: "Color & Style", date: "2023-10-16T14:00:00", status: "upcoming" },
-    { id: "a3", customer: "Sarah Johnson", service: "Manicure", date: "2023-10-17T11:30:00", status: "upcoming" }
+    { id: "a1", customer: "Jennifer Smith", customerEmail: "jennifer@example.com", service: "Haircut & Style", date: "2023-10-15T10:00:00", status: "completed" },
+    { id: "a2", customer: "Michael Brown", customerEmail: "michael@example.com", service: "Color & Style", date: "2023-10-16T14:00:00", status: "pending" },
+    { id: "a3", customer: "Sarah Johnson", customerEmail: "sarah@example.com", service: "Manicure", date: "2023-10-17T11:30:00", status: "pending" },
+    { id: "a4", customer: "David Wilson", customerEmail: "david@example.com", service: "Facial", date: "2023-10-15T13:00:00", status: "pending" },
+    { id: "a5", customer: "Emily Davis", customerEmail: "emily@example.com", service: "Pedicure", date: "2023-10-15T15:30:00", status: "pending" }
+  ],
+  features: [
+    { id: "f1", name: "Free WiFi", icon: "wifi" },
+    { id: "f2", name: "Complimentary Beverages", icon: "coffee" },
+    { id: "f3", name: "Parking Available", icon: "parking" }
   ]
 };
 
 const AdminDashboard: React.FC = () => {
   const [salon, setSalon] = useState(MOCK_SALON);
   const [newService, setNewService] = useState({ name: '', duration: '', price: '' });
+  const [newFeature, setNewFeature] = useState({ name: '', icon: '' });
   const [isAddingService, setIsAddingService] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isAddingFeature, setIsAddingFeature] = useState(false);
   const [editedSalon, setEditedSalon] = useState(salon);
+  const [messageText, setMessageText] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
+
+  // Get today's appointments
+  const today = new Date().toISOString().split('T')[0];
+  const todaysAppointments = salon.appointments.filter(
+    appointment => appointment.date.startsWith(today)
+  );
 
   const handleUpdateProfile = () => {
     setSalon(editedSalon);
@@ -90,6 +114,80 @@ const AdminDashboard: React.FC = () => {
     toast.success('Service removed successfully!');
   };
 
+  const handleAddFeature = () => {
+    if (!newFeature.name) {
+      toast.error('Please enter a feature name');
+      return;
+    }
+    
+    const updatedSalon = {
+      ...salon,
+      features: [
+        ...salon.features,
+        { 
+          id: `f${salon.features.length + 1}`, 
+          name: newFeature.name, 
+          icon: newFeature.icon || 'star' 
+        }
+      ]
+    };
+    
+    setSalon(updatedSalon);
+    setNewFeature({ name: '', icon: '' });
+    setIsAddingFeature(false);
+    toast.success('Feature added successfully!');
+  };
+
+  const handleDeleteFeature = (featureId: string) => {
+    const updatedFeatures = salon.features.filter(feature => feature.id !== featureId);
+    setSalon({
+      ...salon,
+      features: updatedFeatures
+    });
+    toast.success('Feature removed successfully!');
+  };
+
+  const handleAppointmentStatusChange = (appointmentId: string, newStatus: string) => {
+    const updatedAppointments = salon.appointments.map(appointment => 
+      appointment.id === appointmentId 
+        ? { ...appointment, status: newStatus } 
+        : appointment
+    );
+    
+    setSalon({
+      ...salon,
+      appointments: updatedAppointments
+    });
+    
+    toast.success(`Appointment ${newStatus}`);
+    setSelectedAppointment(null);
+  };
+
+  const handleSendNotification = () => {
+    if (!messageText) {
+      toast.error('Please enter a message');
+      return;
+    }
+    
+    // In a real app, this would send an email or SMS
+    console.log(`Sending message to ${selectedAppointment.customer}: ${messageText}`);
+    
+    toast.success(`Notification sent to ${selectedAppointment.customer}`);
+    setMessageText('');
+    setIsNotificationDialogOpen(false);
+  };
+
+  // Format date for display
+  const formatAppointmentDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -106,9 +204,10 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
           </TabsList>
           
@@ -155,10 +254,11 @@ const AdminDashboard: React.FC = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="description">Description</Label>
-                      <Input 
+                      <Textarea 
                         id="description" 
                         value={editedSalon.description} 
                         onChange={e => setEditedSalon({...editedSalon, description: e.target.value})}
+                        rows={4}
                       />
                     </div>
                   </div>
@@ -364,24 +464,207 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </TabsContent>
           
+          <TabsContent value="features" className="space-y-4 pt-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Salon Features</CardTitle>
+                  <Dialog open={isAddingFeature} onOpenChange={setIsAddingFeature}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Feature
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Feature</DialogTitle>
+                        <DialogDescription>
+                          Add a new feature or amenity to your salon
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="featureName">Feature Name</Label>
+                          <Input 
+                            id="featureName" 
+                            value={newFeature.name} 
+                            onChange={e => setNewFeature({...newFeature, name: e.target.value})}
+                            placeholder="e.g. Free WiFi" 
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="featureIcon">Icon (optional)</Label>
+                          <Select
+                            value={newFeature.icon}
+                            onValueChange={(value) => setNewFeature({...newFeature, icon: value})}
+                          >
+                            <SelectTrigger id="featureIcon">
+                              <SelectValue placeholder="Select an icon" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="wifi">WiFi</SelectItem>
+                              <SelectItem value="coffee">Coffee</SelectItem>
+                              <SelectItem value="parking">Parking</SelectItem>
+                              <SelectItem value="music">Music</SelectItem>
+                              <SelectItem value="card">Payment Card</SelectItem>
+                              <SelectItem value="star">Star</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddingFeature(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddFeature}>
+                          Add Feature
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <CardDescription>
+                  Manage your salon's features and amenities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {salon.features.map((feature) => (
+                    <div 
+                      key={feature.id} 
+                      className="flex items-center justify-between p-4 border rounded-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
+                          <span className="text-primary">{feature.icon}</span>
+                        </div>
+                        <span className="font-medium">{feature.name}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteFeature(feature.id)}
+                      >
+                        <Trash className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
           <TabsContent value="appointments" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <CalendarCheck className="mr-2 h-5 w-5" />
-                  Upcoming Appointments
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Today's Appointments
                 </CardTitle>
                 <CardDescription>
-                  Manage your salon's appointments
+                  Manage appointments scheduled for today
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {todaysAppointments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {todaysAppointments.map((appointment) => (
+                        <TableRow key={appointment.id}>
+                          <TableCell>
+                            {new Date(appointment.date).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell className="font-medium">{appointment.customer}</TableCell>
+                          <TableCell>{appointment.service}</TableCell>
+                          <TableCell>
+                            <Badge className={`${
+                              appointment.status === 'completed' 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                                : appointment.status === 'pending'
+                                  ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
+                                  : appointment.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-800 hover:bg-red-100'
+                                    : 'bg-green-100 text-green-800'
+                            }`}>
+                              {appointment.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {appointment.status === 'pending' && (
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="text-green-600"
+                                    onClick={() => handleAppointmentStatusChange(appointment.id, 'approved')}
+                                  >
+                                    <CheckCheck className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="text-red-600"
+                                    onClick={() => handleAppointmentStatusChange(appointment.id, 'cancelled')}
+                                  >
+                                    <XIcon className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedAppointment(appointment);
+                                  setIsNotificationDialogOpen(true);
+                                }}
+                              >
+                                <Bell className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="py-6 text-center text-muted-foreground">
+                    No appointments scheduled for today
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CalendarCheck className="mr-2 h-5 w-5" />
+                  All Upcoming Appointments
+                </CardTitle>
+                <CardDescription>
+                  View and manage all upcoming appointments
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Date & Time</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Service</TableHead>
-                      <TableHead>Date & Time</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -389,30 +672,57 @@ const AdminDashboard: React.FC = () => {
                   <TableBody>
                     {salon.appointments.map((appointment) => (
                       <TableRow key={appointment.id}>
+                        <TableCell>
+                          {formatAppointmentDate(appointment.date)}
+                        </TableCell>
                         <TableCell className="font-medium">{appointment.customer}</TableCell>
                         <TableCell>{appointment.service}</TableCell>
                         <TableCell>
-                          {new Date(appointment.date).toLocaleString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          <Badge className={`${
                             appointment.status === 'completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-blue-100 text-blue-800'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                              : appointment.status === 'pending'
+                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
+                                : appointment.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-100'
+                                  : 'bg-green-100 text-green-800'
                           }`}>
                             {appointment.status}
-                          </span>
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {appointment.status === 'pending' && (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-green-600"
+                                  onClick={() => handleAppointmentStatusChange(appointment.id, 'approved')}
+                                >
+                                  <CheckCheck className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-red-600"
+                                  onClick={() => handleAppointmentStatusChange(appointment.id, 'cancelled')}
+                                >
+                                  <XIcon className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedAppointment(appointment);
+                                setIsNotificationDialogOpen(true);
+                              }}
+                            >
+                              <Bell className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -423,6 +733,55 @@ const AdminDashboard: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Notification Dialog */}
+      <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Notification</DialogTitle>
+            <DialogDescription>
+              Send a notification to {selectedAppointment?.customer} about their appointment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient">Recipient</Label>
+              <Input 
+                id="recipient" 
+                value={selectedAppointment?.customer} 
+                disabled 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="appointment">Appointment</Label>
+              <Input 
+                id="appointment" 
+                value={selectedAppointment ? `${selectedAppointment.service} - ${formatAppointmentDate(selectedAppointment.date)}` : ''} 
+                disabled 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea 
+                id="message" 
+                placeholder="Enter your message here..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendNotification}>
+              <Bell className="h-4 w-4 mr-2" />
+              Send Notification
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
