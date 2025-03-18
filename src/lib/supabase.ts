@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client with fallback values for development
@@ -39,6 +38,31 @@ export type Salon = {
   cover_image_url?: string;
   created_at: string;
   updated_at: string;
+  
+  // Extended properties for UI functionality
+  hours?: {
+    [key: string]: string;
+  };
+  services?: {
+    id: string;
+    name: string;
+    duration: string;
+    price: string;
+  }[];
+  images?: string[];
+  appointments?: {
+    id: string;
+    customer: string;
+    customerEmail: string;
+    service: string;
+    date: string;
+    status: string;
+  }[];
+  features?: {
+    id: string;
+    name: string;
+    icon: string;
+  }[];
 }
 
 export type Service = {

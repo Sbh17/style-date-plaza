@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Shield, Edit, Trash, Plus, Settings, MapPin, Clock, Phone, 
@@ -69,7 +68,7 @@ const MOCK_SALON: Salon = {
     { id: "f2", name: "Complimentary Beverages", icon: "coffee" },
     { id: "f3", name: "Parking Available", icon: "parking" }
   ]
-} as Salon;
+};
 
 const AdminDashboard: React.FC = () => {
   const [salon, setSalon] = useState(MOCK_SALON);
