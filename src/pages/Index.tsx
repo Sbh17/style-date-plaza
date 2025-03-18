@@ -9,6 +9,7 @@ import Layout from '@/components/Layout';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import NewsPromoBanner from '@/components/NewsPromoBanner';
 
 // Mock data
 const MOCK_SALONS = [
@@ -178,6 +179,9 @@ const Index: React.FC = () => {
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         </div>
+        
+        {/* News and Promotions Banner */}
+        <NewsPromoBanner className="mt-4" />
         
         <div className="relative -mx-4 px-4">
           <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">

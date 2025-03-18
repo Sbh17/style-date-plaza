@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, type Profile, type Salon } from '@/lib/supabase';
+import { supabase, type Profile, type Salon, type News } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Shield, User, Scissors, RefreshCw, Check, X } from 'lucide-react';
+import { Shield, User, Scissors, RefreshCw, Check, X, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,46 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+
+const MOCK_NEWS: (News & { salon_name: string })[] = [
+  {
+    id: '1',
+    salon_id: '1',
+    salon_name: 'Elegance Beauty Salon',
+    title: '50% Off on All Hair Services',
+    content: 'Enjoy half price on all haircuts, coloring, and styling this week. Book now to secure your spot!',
+    starts_at: new Date(Date.now() - 86400000).toISOString(), // yesterday
+    ends_at: new Date(Date.now() + 604800000).toISOString(), // a week from now
+    is_approved: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    salon_id: '2',
+    salon_name: 'Pure Bliss Spa & Salon',
+    title: 'New Customer Special',
+    content: 'First-time customers receive a complimentary deep conditioning treatment with any service.',
+    starts_at: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+    ends_at: new Date(Date.now() + 604800000 * 2).toISOString(), // 2 weeks from now
+    is_approved: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    salon_id: '3',
+    salon_name: 'Modern Cuts & Color',
+    title: 'Summer Package Deal',
+    content: 'Book our summer package and get a manicure, pedicure, and facial for only $99.',
+    starts_at: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+    ends_at: new Date(Date.now() + 604800000 * 4).toISOString(), // 4 weeks from now
+    is_approved: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+];
 
 const SuperAdminDashboard = () => {
   const { user, isSuperAdmin } = useAuth();
@@ -20,12 +59,14 @@ const SuperAdminDashboard = () => {
   
   const [users, setUsers] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [news, setNews] = useState<(News & { salon_name: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [newRole, setNewRole] = useState<'user' | 'admin' | 'superadmin'>('user');
+  const [showNewsDialog, setShowNewsDialog] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<(News & { salon_name: string }) | null>(null);
 
-  // Check if the user is a superadmin, redirect if not
   useEffect(() => {
     if (!isSuperAdmin) {
       toast.error("Access denied. Super Admin permissions required.");
@@ -33,12 +74,10 @@ const SuperAdminDashboard = () => {
     }
   }, [isSuperAdmin, navigate]);
 
-  // Fetch users and salons
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch all users
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
@@ -46,16 +85,16 @@ const SuperAdminDashboard = () => {
         
         if (profilesError) throw profilesError;
         
-        // Fetch all salons
         const { data: salonsData, error: salonsError } = await supabase
           .from('salons')
           .select('*')
           .order('created_at', { ascending: false });
         
         if (salonsError) throw salonsError;
-        
-        setUsers(profilesData || []);
-        setSalons(salonsData || []);
+
+        setTimeout(() => {
+          setNews(MOCK_NEWS);
+        }, 500);
       } catch (error: any) {
         console.error('Error fetching data:', error.message);
         toast.error(`Failed to load data: ${error.message}`);
@@ -67,7 +106,6 @@ const SuperAdminDashboard = () => {
     fetchData();
   }, []);
 
-  // Function to handle role changes
   const handleRoleChange = async () => {
     if (!selectedUser || !newRole) return;
     
@@ -79,7 +117,6 @@ const SuperAdminDashboard = () => {
       
       if (error) throw error;
       
-      // Update local state
       setUsers(users.map(u => 
         u.id === selectedUser.id ? { ...u, role: newRole } : u
       ));
@@ -92,14 +129,31 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  // Function to open the role change dialog
   const openRoleDialog = (user: Profile) => {
     setSelectedUser(user);
     setNewRole(user.role);
     setShowRoleDialog(true);
   };
 
-  // Function to refresh the data
+  const handleNewsApproval = async (newsId: string, isApproved: boolean) => {
+    try {
+      setNews(news.map(item => 
+        item.id === newsId ? { ...item, is_approved: isApproved } : item
+      ));
+      
+      toast.success(`Promotion ${isApproved ? 'approved' : 'rejected'} successfully`);
+      setShowNewsDialog(false);
+    } catch (error: any) {
+      console.error('Error updating news:', error.message);
+      toast.error(`Failed to update promotion: ${error.message}`);
+    }
+  };
+
+  const openNewsDialog = (newsItem: (News & { salon_name: string })) => {
+    setSelectedNews(newsItem);
+    setShowNewsDialog(true);
+  };
+
   const refreshData = async () => {
     setLoading(true);
     try {
@@ -119,6 +173,7 @@ const SuperAdminDashboard = () => {
       
       setUsers(profilesData || []);
       setSalons(salonsData || []);
+      setNews(MOCK_NEWS);
       toast.success('Data refreshed successfully');
     } catch (error: any) {
       console.error('Error refreshing data:', error.message);
@@ -150,14 +205,18 @@ const SuperAdminDashboard = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="users" className="gap-2">
                 <User className="h-4 w-4" />
-                Users Management
+                Users
               </TabsTrigger>
               <TabsTrigger value="salons" className="gap-2">
                 <Scissors className="h-4 w-4" />
-                Salons Management
+                Salons
+              </TabsTrigger>
+              <TabsTrigger value="promotions" className="gap-2">
+                <Megaphone className="h-4 w-4" />
+                Promotions
               </TabsTrigger>
             </TabsList>
             
@@ -205,7 +264,7 @@ const SuperAdminDashboard = () => {
                                 variant="outline" 
                                 size="sm" 
                                 onClick={() => openRoleDialog(profile)}
-                                disabled={user?.id === profile.user_id} // Can't change own role
+                                disabled={user?.id === profile.user_id}
                               >
                                 Change Role
                               </Button>
@@ -275,11 +334,80 @@ const SuperAdminDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="promotions" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Promotions Management</CardTitle>
+                  <CardDescription>
+                    Review and approve salon promotions and news
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Salon</TableHead>
+                          <TableHead>Dates</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {news.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-6">
+                              No promotions found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          news.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{item.title}</TableCell>
+                              <TableCell>{item.salon_name}</TableCell>
+                              <TableCell>
+                                <div className="text-xs">
+                                  <p>Start: {new Date(item.starts_at).toLocaleDateString()}</p>
+                                  <p>End: {new Date(item.ends_at).toLocaleDateString()}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {item.is_approved ? (
+                                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                                    Approved
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                                    Pending Approval
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openNewsDialog(item)}
+                                  >
+                                    Review
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
       </div>
 
-      {/* Role Change Dialog */}
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
         <DialogContent>
           <DialogHeader>
@@ -341,6 +469,111 @@ const SuperAdminDashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRoleDialog(false)}>Cancel</Button>
             <Button onClick={handleRoleChange}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showNewsDialog} onOpenChange={setShowNewsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Promotion</DialogTitle>
+            <DialogDescription>
+              Review the promotion details before approving or rejecting.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedNews && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-1">
+                <h3 className="font-medium">Promotion Title</h3>
+                <p>{selectedNews.title}</p>
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="font-medium">Salon</h3>
+                <p>{selectedNews.salon_name}</p>
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="font-medium">Content</h3>
+                <p className="text-sm">{selectedNews.content}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <h3 className="font-medium">Start Date</h3>
+                  <p>{new Date(selectedNews.starts_at).toLocaleDateString()}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="font-medium">End Date</h3>
+                  <p>{new Date(selectedNews.ends_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+              
+              {selectedNews.image_url && (
+                <div className="space-y-1">
+                  <h3 className="font-medium">Image</h3>
+                  <div className="rounded-md overflow-hidden border">
+                    <img 
+                      src={selectedNews.image_url} 
+                      alt={selectedNews.title}
+                      className="w-full h-auto max-h-40 object-cover" 
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <Alert variant={selectedNews.is_approved ? "default" : "destructive"}>
+                <AlertTitle>
+                  {selectedNews.is_approved ? "Currently Approved" : "Awaiting Approval"}
+                </AlertTitle>
+                <AlertDescription>
+                  {selectedNews.is_approved 
+                    ? "This promotion is currently visible to users." 
+                    : "This promotion is not visible to users until approved."}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          
+          <DialogFooter>
+            {selectedNews && (
+              selectedNews.is_approved ? (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleNewsApproval(selectedNews.id, false)}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Reject Promotion
+                </Button>
+              ) : (
+                <div className="flex w-full justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowNewsDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleNewsApproval(selectedNews.id, false)}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Reject
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={() => handleNewsApproval(selectedNews.id, true)}
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              )
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client with fallback values for development
@@ -86,6 +87,20 @@ export type Review = {
   appointment_id?: string;
   rating: number;
   comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// News/Promotions type
+export type News = {
+  id: string;
+  salon_id: string;
+  title: string;
+  content: string;
+  image_url?: string;
+  starts_at: string;
+  ends_at: string;
+  is_approved: boolean;
   created_at: string;
   updated_at: string;
 }

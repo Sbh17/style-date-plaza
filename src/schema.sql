@@ -1,3 +1,4 @@
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -92,7 +93,21 @@ CREATE TABLE IF NOT EXISTS reviews (
   CONSTRAINT unique_user_salon_appointment UNIQUE (user_id, salon_id, appointment_id)
 );
 
--- Create RLS policies
+-- Create news/promotions table
+CREATE TABLE IF NOT EXISTS news (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  salon_id UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  image_url TEXT,
+  starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  is_approved BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  CONSTRAINT date_check CHECK (starts_at < ends_at)
+);
 
 -- Enable Row Level Security on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -101,6 +116,7 @@ ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stylists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE news ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view their own profile" 
@@ -252,6 +268,35 @@ CREATE POLICY "Users can update their own reviews"
 ON reviews FOR UPDATE 
 USING (auth.uid() = user_id);
 
+-- News policies
+CREATE POLICY "Public news is viewable by everyone" 
+ON news FOR SELECT 
+USING (is_approved = true);
+
+CREATE POLICY "Admins can view all news for their salon" 
+ON news FOR SELECT 
+USING (EXISTS (
+  SELECT 1 FROM profiles 
+  WHERE profiles.user_id = auth.uid() 
+  AND profiles.role = 'admin'
+));
+
+CREATE POLICY "Admins can insert news for their salon" 
+ON news FOR INSERT 
+WITH CHECK (EXISTS (
+  SELECT 1 FROM profiles 
+  WHERE profiles.user_id = auth.uid() 
+  AND profiles.role = 'admin'
+));
+
+CREATE POLICY "Admins can update their salon's news" 
+ON news FOR UPDATE 
+USING (EXISTS (
+  SELECT 1 FROM profiles 
+  WHERE profiles.user_id = auth.uid() 
+  AND profiles.role = 'admin'
+));
+
 -- Add a few more helpful policies for superadmins
 
 -- Service policies (updated for superadmin)
@@ -307,6 +352,17 @@ USING (
   )
 );
 
+-- News policies (updated for superadmin)
+CREATE POLICY "Superadmins can manage all news" 
+ON news FOR ALL 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
+
 -- Create functions and triggers
 
 -- Function to update updated_at timestamp
@@ -341,5 +397,10 @@ EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reviews_updated_at
 BEFORE UPDATE ON reviews
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_news_updated_at
+BEFORE UPDATE ON news
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
