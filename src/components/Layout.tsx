@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const pathname = location.pathname;
   
-  const { user, isAuthenticated, isAdmin, logout, goToAdmin } = useAuth();
+  const { user, isAuthenticated, isAdmin, isSuperAdmin, logout, goToAdmin, goToSuperAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   // Animation based on route change
@@ -110,6 +110,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <span>Admin Dashboard</span>
                     </DropdownMenuItem>
                   </>
+                )}
+                {isSuperAdmin && (
+                  <DropdownMenuItem onClick={goToSuperAdmin} className="flex items-center">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Super Admin Dashboard</span>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="flex items-center text-destructive">
