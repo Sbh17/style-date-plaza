@@ -52,25 +52,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const mapUser = async (session: Session | null): Promise<User | null> => {
     if (!session?.user) return null;
     
-    // Get profile information from our profiles table
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching user profile', error);
+    try {
+      // Get profile information from our profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile', error);
+        return null;
+      }
+      
+      return {
+        id: session.user.id,
+        name: profile?.name || 'User',
+        email: session.user.email || '',
+        role: profile?.role || 'user',
+        profileImage: profile?.profile_image || undefined,
+      };
+    } catch (err) {
+      console.error('Error in mapUser function:', err);
       return null;
     }
-    
-    return {
-      id: session.user.id,
-      name: profile?.name || 'User',
-      email: session.user.email || '',
-      role: profile?.role || 'user',
-      profileImage: profile?.profile_image || undefined,
-    };
   };
 
   // Listen for authentication state changes
@@ -79,10 +84,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Check for existing session
     const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userData = await mapUser(session);
-      setUser(userData);
-      setIsLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth session error:', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        const userData = await mapUser(session);
+        setUser(userData);
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     initializeAuth();
