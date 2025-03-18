@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import NewsPromoForm from '@/components/NewsPromoForm';
+import NewsPromoCard from '@/components/NewsPromoCard';
 
 const MOCK_SALON = {
   id: "1",
@@ -235,11 +237,12 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="promotions">Promotions</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="space-y-4 pt-4">
@@ -816,6 +819,73 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          
+          <TabsContent value="promotions" className="space-y-4 pt-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Salon Promotions</CardTitle>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Promotion
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Promotion</DialogTitle>
+                        <DialogDescription>
+                          Add a new promotion for your salon. It will be sent for approval to the super admin.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <NewsPromoForm 
+                        salonId={salon.id} 
+                        onSuccess={() => {
+                          toast.success('Promotion created and sent for approval');
+                        }} 
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <CardDescription>
+                  Create and manage promotional content for your salon
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <NewsPromoCard 
+                    news={{
+                      id: '1',
+                      salon_id: salon.id,
+                      title: 'Summer Special Offer',
+                      content: '20% off on all hair services this summer!',
+                      starts_at: new Date().toISOString(),
+                      ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                      is_approved: true,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    }}
+                    salon={salon}
+                  />
+                  <NewsPromoCard 
+                    news={{
+                      id: '2',
+                      salon_id: salon.id,
+                      title: 'New Client Discount',
+                      content: 'First-time clients get 15% off any service!',
+                      starts_at: new Date().toISOString(),
+                      ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                      is_approved: false,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    }}
+                    salon={salon}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -871,3 +941,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+
