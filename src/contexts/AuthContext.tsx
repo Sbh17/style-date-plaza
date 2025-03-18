@@ -1,7 +1,6 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/supabase';
 
@@ -26,6 +25,7 @@ interface AuthContextType {
   goToAdmin: () => void;
   goToSuperAdmin: () => void;
   isLoading: boolean;
+  requireAuth: (redirectTo?: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isAuthenticated = user !== null;
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -177,6 +178,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    const publicRoutes = ['/welcome', '/sign-in', '/sign-up', '/explore'];
+    
+    if (!isLoading) {
+      // If not authenticated and not on a public route, redirect to welcome
+      if (!isAuthenticated && !publicRoutes.includes(location.pathname) && location.pathname !== '/') {
+        navigate('/welcome');
+      }
+      
+      // If authenticated and on welcome page, redirect to home
+      if (isAuthenticated && location.pathname === '/welcome') {
+        navigate('/');
+      }
+      
+      // If on root path, redirect appropriately
+      if (location.pathname === '/') {
+        if (!isAuthenticated) {
+          navigate('/welcome');
+        }
+      }
+    }
+  }, [isAuthenticated, isLoading, location.pathname, navigate]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -308,6 +333,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.error('You need super admin permissions to access this page');
     }
   };
+  
+  // Helper function for components to check auth status
+  const requireAuth = (redirectTo: string = '/welcome') => {
+    if (isLoading) return false;
+    
+    if (!isAuthenticated) {
+      navigate(redirectTo);
+      return false;
+    }
+    
+    return true;
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -320,7 +357,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       goToAdmin,
       goToSuperAdmin,
-      isLoading
+      isLoading,
+      requireAuth
     }}>
       {children}
     </AuthContext.Provider>
