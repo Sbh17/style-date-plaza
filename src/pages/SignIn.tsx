@@ -8,15 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
+    await login(email, password);
   };
 
   return (
@@ -57,22 +58,17 @@ const SignIn: React.FC = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Sign in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </form>
-
-            <div className="mt-4 text-center text-sm">
-              <p>
-                For demo purposes, you can use:
-              </p>
-              <p className="mt-1">
-                <strong>User:</strong> emma@example.com / password123
-              </p>
-              <p>
-                <strong>Admin:</strong> admin@example.com / admin123
-              </p>
-            </div>
 
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">

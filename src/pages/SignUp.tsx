@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -19,6 +20,8 @@ type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
+  const { signUp, isLoading } = useAuth();
+  
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -28,10 +31,8 @@ const SignUp: React.FC = () => {
     },
   });
 
-  const onSubmit = (data: SignUpFormValues) => {
-    console.log("Sign up data:", data);
-    // Mock sign up - would be replaced with actual authentication
-    navigate('/');
+  const onSubmit = async (data: SignUpFormValues) => {
+    await signUp(data.email, data.password, data.name);
   };
 
   return (
@@ -93,9 +94,18 @@ const SignUp: React.FC = () => {
               )}
             />
             
-            <Button type="submit" className="w-full" size="lg">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Create Account
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Create Account
+                </>
+              )}
             </Button>
           </form>
         </Form>
