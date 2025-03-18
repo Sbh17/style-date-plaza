@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.32ba3c43670e41b48b8ac395e79c76eb',
+  appId: 'com.lovable.styledateplaza',
   appName: 'style-date-plaza',
   webDir: 'dist',
   server: {
