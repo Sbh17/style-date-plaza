@@ -26,6 +26,74 @@ export type Profile = {
   created_at: string;
 }
 
+export type Salon = {
+  id: string;
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  phone: string;
+  email: string;
+  website?: string;
+  rating?: number;
+  logo_url?: string;
+  cover_image_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Service = {
+  id: string;
+  salon_id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number; // in minutes
+  category: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Stylist = {
+  id: string;
+  salon_id: string;
+  name: string;
+  bio: string;
+  specialties: string[];
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Appointment = {
+  id: string;
+  user_id: string;
+  salon_id: string;
+  service_id: string;
+  stylist_id?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Review = {
+  id: string;
+  user_id: string;
+  salon_id: string;
+  appointment_id?: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Current authenticated user's type
 export type AuthUser = {
   id: string;
