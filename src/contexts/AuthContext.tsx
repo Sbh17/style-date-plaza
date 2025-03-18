@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, type Profile, type AuthUser } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
-type UserRole = 'user' | 'admin';
+type UserRole = 'user' | 'admin' | 'superadmin';
 
 interface User {
   id: string;
@@ -19,10 +19,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   goToAdmin: () => void;
+  goToSuperAdmin: () => void;
   isLoading: boolean;
 }
 
@@ -46,7 +48,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   const isAuthenticated = user !== null;
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperAdmin = user?.role === 'superadmin';
 
   // Function to map Supabase user and profile to our app's User type
   const mapUser = async (session: Session | null): Promise<User | null> => {
@@ -201,15 +204,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const goToSuperAdmin = () => {
+    if (isSuperAdmin) {
+      navigate('/super-admin');
+    } else {
+      toast.error('You need super admin permissions to access this page');
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
       isAuthenticated, 
-      isAdmin, 
+      isAdmin,
+      isSuperAdmin,
       login, 
       signUp,
       logout,
       goToAdmin,
+      goToSuperAdmin,
       isLoading
     }}>
       {children}

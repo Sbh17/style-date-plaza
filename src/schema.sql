@@ -1,4 +1,3 @@
-
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -8,7 +7,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id UUID REFERENCES auth.users NOT NULL UNIQUE,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
-  role TEXT NOT NULL CHECK (role IN ('user', 'admin')) DEFAULT 'user',
+  role TEXT NOT NULL CHECK (role IN ('user', 'admin', 'superadmin')) DEFAULT 'user',
   profile_image TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
@@ -108,30 +107,74 @@ CREATE POLICY "Users can view their own profile"
 ON profiles FOR SELECT 
 USING (auth.uid() = user_id);
 
+CREATE POLICY "Superadmins can view all profiles" 
+ON profiles FOR SELECT 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.user_id = auth.uid()
+    AND profiles.role = 'superadmin'
+  )
+);
+
 CREATE POLICY "Users can update their own profile" 
 ON profiles FOR UPDATE 
 USING (auth.uid() = user_id);
 
--- Salon policies (public read, admin write)
+CREATE POLICY "Superadmins can update any profile" 
+ON profiles FOR UPDATE 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.user_id = auth.uid()
+    AND profiles.role = 'superadmin'
+  )
+);
+
+CREATE POLICY "Superadmins can insert profiles" 
+ON profiles FOR INSERT 
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.user_id = auth.uid()
+    AND profiles.role = 'superadmin'
+  )
+);
+
+-- Salon policies (updated for superadmin)
 CREATE POLICY "Salons are viewable by everyone" 
 ON salons FOR SELECT 
 USING (true);
 
-CREATE POLICY "Only admins can insert salons" 
+CREATE POLICY "Admins and superadmins can insert salons" 
 ON salons FOR INSERT 
-WITH CHECK (EXISTS (
-  SELECT 1 FROM profiles 
-  WHERE profiles.user_id = auth.uid() 
-  AND profiles.role = 'admin'
-));
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND (profiles.role = 'admin' OR profiles.role = 'superadmin')
+  )
+);
 
-CREATE POLICY "Only admins can update salons" 
+CREATE POLICY "Admins and superadmins can update salons" 
 ON salons FOR UPDATE 
-USING (EXISTS (
-  SELECT 1 FROM profiles 
-  WHERE profiles.user_id = auth.uid() 
-  AND profiles.role = 'admin'
-));
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND (profiles.role = 'admin' OR profiles.role = 'superadmin')
+  )
+);
+
+CREATE POLICY "Superadmins can delete salons" 
+ON salons FOR DELETE 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
 
 -- Service policies (similar to salons)
 CREATE POLICY "Services are viewable by everyone" 
@@ -208,6 +251,61 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own reviews" 
 ON reviews FOR UPDATE 
 USING (auth.uid() = user_id);
+
+-- Add a few more helpful policies for superadmins
+
+-- Service policies (updated for superadmin)
+CREATE POLICY "Superadmins can manage all services" 
+ON services FOR ALL 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
+
+-- Stylist policies (updated for superadmin)
+CREATE POLICY "Superadmins can manage all stylists" 
+ON stylists FOR ALL 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
+
+-- Appointment policies (updated for superadmin)
+CREATE POLICY "Superadmins can view all appointments" 
+ON appointments FOR SELECT 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
+
+CREATE POLICY "Superadmins can manage all appointments" 
+ON appointments FOR INSERT 
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
+
+CREATE POLICY "Superadmins can update all appointments" 
+ON appointments FOR UPDATE 
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.user_id = auth.uid() 
+    AND profiles.role = 'superadmin'
+  )
+);
 
 -- Create functions and triggers
 

@@ -21,7 +21,7 @@ export type Profile = {
   user_id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'superadmin';
   profile_image: string | null;
   created_at: string;
 }
