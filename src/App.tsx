@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard"; // Add import for new page
 import Reviews from "./pages/Reviews";
 import Analytics from "./pages/Analytics";
 import Promotions from "./pages/Promotions";
@@ -34,6 +35,7 @@ const AppRoutes = () => (
     <Route path="/sign-in" element={<SignIn />} />
     <Route path="/sign-up" element={<SignUp />} />
     <Route path="/admin" element={<AdminDashboard />} />
+    <Route path="/super-admin" element={<SuperAdminDashboard />} /> {/* Add new route */}
     <Route path="/reviews" element={<Reviews />} />
     <Route path="/analytics" element={<Analytics />} />
     <Route path="/promotions" element={<Promotions />} />
