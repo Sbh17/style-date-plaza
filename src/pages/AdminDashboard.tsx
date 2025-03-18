@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Shield, Edit, Trash, Plus, Settings, MapPin, Clock, Phone, 
@@ -18,18 +19,31 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NewsPromoForm from '@/components/NewsPromoForm';
 import NewsPromoCard from '@/components/NewsPromoCard';
+import { Salon } from '@/lib/supabase';
 
-const MOCK_SALON = {
+// Updated MOCK_SALON to include all fields required by the Salon type
+const MOCK_SALON: Salon = {
   id: "1",
   name: "Elegance Beauty Salon",
-  address: "123 Beauty Street, Downtown",
   description: "Elegance Beauty Salon offers a wide range of services including haircuts, coloring, styling, makeup, and nail treatments. Our team of professionals is dedicated to providing you with the best beauty experience.",
+  address: "123 Beauty Street, Downtown",
+  city: "New York",
+  state: "NY",
+  zip_code: "10001",
+  phone: "+1 (555) 123-4567",
+  email: "info@elegancebeauty.com",
+  website: "www.elegancebeauty.com",
+  rating: 4.8,
+  logo_url: "https://images.unsplash.com/photo-1562322140-8baeececf3df?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8c2Fsb24lMjBsb2dvfGVufDB8fDB8fHww&auto=format&fit=crop&w=900&q=60",
+  cover_image_url: "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2066&q=80",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  // Adding these non-type properties for the mock data
   hours: {
     "Monday-Friday": "9:00 AM - 7:00 PM",
     "Saturday": "9:00 AM - 5:00 PM",
     "Sunday": "Closed"
   },
-  phone: "+1 (555) 123-4567",
   services: [
     { id: "s1", name: "Haircut & Style", duration: "45 min", price: "$65" },
     { id: "s2", name: "Color & Style", duration: "2 hrs", price: "$120" },
@@ -55,7 +69,7 @@ const MOCK_SALON = {
     { id: "f2", name: "Complimentary Beverages", icon: "coffee" },
     { id: "f3", name: "Parking Available", icon: "parking" }
   ]
-};
+} as Salon;
 
 const AdminDashboard: React.FC = () => {
   const [salon, setSalon] = useState(MOCK_SALON);
@@ -941,4 +955,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-
