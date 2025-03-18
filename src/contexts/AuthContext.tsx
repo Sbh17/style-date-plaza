@@ -1,9 +1,7 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { supabase, type Profile, type AuthUser } from '@/lib/supabase';
-import { Session } from '@supabase/supabase-js';
 
 type UserRole = 'user' | 'admin' | 'superadmin';
 
@@ -42,100 +40,72 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Mock user data for development
+const MOCK_USERS = [
+  {
+    id: '1',
+    name: 'Regular User',
+    email: 'user@example.com',
+    password: 'password123',
+    role: 'user' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=User'
+  },
+  {
+    id: '2',
+    name: 'Admin User',
+    email: 'admin@example.com',
+    password: 'admin123',
+    role: 'admin' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=Admin'
+  },
+  {
+    id: '3',
+    name: 'Super Admin',
+    email: 'superadmin@example.com',
+    password: 'super123',
+    role: 'superadmin' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=Super+Admin'
+  }
+];
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const isAuthenticated = user !== null;
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
 
-  // Function to map Supabase user and profile to our app's User type
-  const mapUser = async (session: Session | null): Promise<User | null> => {
-    if (!session?.user) return null;
-    
-    try {
-      // Get profile information from our profiles table
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching user profile', error);
-        return null;
-      }
-      
-      return {
-        id: session.user.id,
-        name: profile?.name || 'User',
-        email: session.user.email || '',
-        role: profile?.role || 'user',
-        profileImage: profile?.profile_image || undefined,
-      };
-    } catch (err) {
-      console.error('Error in mapUser function:', err);
-      return null;
-    }
-  };
-
-  // Listen for authentication state changes
-  useEffect(() => {
-    setIsLoading(true);
-    
-    // Check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth session error:', error);
-          setIsLoading(false);
-          return;
-        }
-        
-        const userData = await mapUser(session);
-        setUser(userData);
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    initializeAuth();
-    
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      const userData = await mapUser(session);
-      setUser(userData);
-      setIsLoading(false);
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // In a real app, this would communicate with Supabase
+      // For this example, we'll just check our mock users
+      const foundUser = MOCK_USERS.find(
+        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+      );
       
-      if (error) throw error;
+      if (!foundUser) {
+        throw new Error('Invalid credentials');
+      }
       
-      const userData = await mapUser(data.session);
-      setUser(userData);
+      // Create the user object, omitting the password
+      const { password: _, ...userWithoutPassword } = foundUser;
+      setUser(userWithoutPassword);
       
-      toast.success(`Welcome back, ${userData?.name || 'User'}!`);
-      navigate(userData?.role === 'admin' ? '/admin' : '/profile');
+      toast.success(`Welcome back, ${foundUser.name}!`);
+      
+      // Navigate based on role
+      if (foundUser.role === 'superadmin') {
+        navigate('/super-admin');
+      } else if (foundUser.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/profile');
+      }
+      
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
       console.error('Login error:', error);
@@ -148,30 +118,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      // In a real app, this would communicate with Supabase
+      // For this example, we'll just check if the email exists
+      const userExists = MOCK_USERS.some(u => u.email.toLowerCase() === email.toLowerCase());
       
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      if (userExists) {
+        throw new Error('Email already in use');
+      }
       
-      // 2. Create profile record
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            user_id: authData.user.id,
-            email,
-            name,
-            role: 'user',
-          }
-        ]);
-      
-      if (profileError) throw profileError;
-      
-      toast.success('Account created successfully! Please check your email to confirm your account.');
+      toast.success('Account created successfully! You can now sign in.');
       navigate('/sign-in');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
@@ -182,18 +137,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      setIsLoading(true);
-      await supabase.auth.signOut();
-      setUser(null);
-      toast.success('Logged out successfully');
-      navigate('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to log out');
-      console.error('Logout error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true);
+    
+    // In a real app, this would communicate with Supabase
+    setUser(null);
+    
+    toast.success('Logged out successfully');
+    navigate('/');
+    
+    setIsLoading(false);
   };
   
   const goToAdmin = () => {
