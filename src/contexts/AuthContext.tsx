@@ -65,6 +65,14 @@ const MOCK_USERS = [
     password: 'super123',
     role: 'superadmin' as UserRole,
     profileImage: 'https://ui-avatars.com/api/?name=Super+Admin'
+  },
+  {
+    id: '4',
+    name: 'Sabre Boshnaq',
+    email: 'sabreboshnaq@gmail.com',
+    password: 'sabre123',
+    role: 'superadmin' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=Sabre+Boshnaq'
   }
 ];
 
