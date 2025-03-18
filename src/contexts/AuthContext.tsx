@@ -1,7 +1,9 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import type { Profile } from '@/lib/supabase';
 
 type UserRole = 'user' | 'admin' | 'superadmin';
 
@@ -40,7 +42,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Mock user data for development
+// Mock user data for development - will be used as fallback if Supabase connection fails
 const MOCK_USERS = [
   {
     id: '1',
@@ -78,37 +80,142 @@ const MOCK_USERS = [
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const isAuthenticated = user !== null;
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
 
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get current session from Supabase
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
+        
+        if (session?.user) {
+          // Get user profile from the profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Profile error:', profileError);
+            throw profileError;
+          }
+          
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              name: profile.name,
+              email: profile.email,
+              role: profile.role,
+              profileImage: profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`
+            });
+          }
+        }
+      } catch (error: any) {
+        console.error('Auth check error:', error);
+        // Fallback to localStorage if Supabase connection fails
+        const storedUser = localStorage.getItem('mock_user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Get user profile after sign in
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+            return;
+          }
+          
+          if (profile) {
+            const userData = {
+              id: session.user.id,
+              name: profile.name,
+              email: profile.email,
+              role: profile.role,
+              profileImage: profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`
+            };
+            
+            setUser(userData);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem('mock_user');
+        }
+      }
+    );
+    
+    checkSession();
+    
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       
-      // In a real app, this would communicate with Supabase
-      // For this example, we'll just check our mock users
-      const foundUser = MOCK_USERS.find(
-        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-      );
+      // Try to sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (!foundUser) {
-        throw new Error('Invalid credentials');
+      if (error) {
+        // If Supabase auth fails, try mock users (for development/demo)
+        console.warn('Supabase auth failed, falling back to mock users:', error.message);
+        
+        const foundUser = MOCK_USERS.find(
+          u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+        );
+        
+        if (!foundUser) {
+          throw new Error('Invalid credentials');
+        }
+        
+        // Create the user object, omitting the password
+        const { password: _, ...userWithoutPassword } = foundUser;
+        setUser(userWithoutPassword);
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('mock_user', JSON.stringify(userWithoutPassword));
+        
+        toast.success(`Welcome back, ${foundUser.name}! (Using mock data)`);
+      } else {
+        toast.success(`Signed in successfully!`);
       }
       
-      // Create the user object, omitting the password
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      
-      toast.success(`Welcome back, ${foundUser.name}!`);
-      
       // Navigate based on role
-      if (foundUser.role === 'superadmin') {
+      if (user?.role === 'superadmin') {
         navigate('/super-admin');
-      } else if (foundUser.role === 'admin') {
+      } else if (user?.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/profile');
@@ -126,16 +233,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // In a real app, this would communicate with Supabase
-      // For this example, we'll just check if the email exists
-      const userExists = MOCK_USERS.some(u => u.email.toLowerCase() === email.toLowerCase());
+      // Register with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name
+          }
+        }
+      });
       
-      if (userExists) {
-        throw new Error('Email already in use');
+      if (authError) throw authError;
+      
+      if (authData.user) {
+        // Create a new profile in the profiles table
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            name,
+            email,
+            role: 'user' // Default role for new users
+          });
+        
+        if (profileError) throw profileError;
+        
+        toast.success('Account created successfully! You can now sign in.');
+        navigate('/sign-in');
       }
-      
-      toast.success('Account created successfully! You can now sign in.');
-      navigate('/sign-in');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
       console.error('Signup error:', error);
@@ -147,13 +273,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     setIsLoading(true);
     
-    // In a real app, this would communicate with Supabase
-    setUser(null);
-    
-    toast.success('Logged out successfully');
-    navigate('/');
-    
-    setIsLoading(false);
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      // Also clear any mock user
+      localStorage.removeItem('mock_user');
+      setUser(null);
+      
+      toast.success('Logged out successfully');
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Error signing out');
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const goToAdmin = () => {
