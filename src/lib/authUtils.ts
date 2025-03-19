@@ -18,10 +18,11 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
       return true;
     }
     
+    // Changed to allow new user creation
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false,
+        shouldCreateUser: true, // Allow creating new users with OTP
       }
     });
     
