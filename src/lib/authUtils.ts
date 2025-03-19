@@ -14,6 +14,7 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
       console.warn('Using mock authentication due to missing Supabase credentials');
       // Simulate successful OTP send for development purposes
       toast.success(`Development mode: Verification code sent to ${email}`);
+      toast.info('In development mode, any 6-digit code will work for verification');
       return true;
     }
     
@@ -58,7 +59,7 @@ export const verifyOTP = async (email: string, otp: string): Promise<boolean> =>
         toast.success('Development mode: Email verified successfully');
         return true;
       } else {
-        throw new Error('Invalid verification code format');
+        throw new Error('Invalid verification code format. In development mode, use any 6 digits.');
       }
     }
     
@@ -85,4 +86,12 @@ export const verifyOTP = async (email: string, otp: string): Promise<boolean> =>
     
     return false;
   }
+};
+
+/**
+ * Helper to check if Supabase is properly configured
+ * @returns Boolean indicating if Supabase credentials are set
+ */
+export const isSupabaseConfigured = (): boolean => {
+  return !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 };

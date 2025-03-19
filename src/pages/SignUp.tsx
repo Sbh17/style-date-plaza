@@ -11,7 +11,7 @@ import { ArrowLeft, Loader2, UserPlus, CheckCircle, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { supabase } from '@/lib/supabase';
+import { sendOTPVerification, verifyOTP, isSupabaseConfigured } from '@/lib/authUtils';
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -44,26 +44,27 @@ const SignUp: React.FC = () => {
       // Store email for OTP verification
       setEmail(data.email);
       
-      // Send OTP email
-      const { error } = await supabase.auth.signInWithOtp({
-        email: data.email,
-        options: {
-          shouldCreateUser: false,
+      // Use our authUtils function instead of direct Supabase call
+      const success = await sendOTPVerification(data.email);
+      
+      if (success) {
+        // Move to verification step
+        setStep('verification');
+        
+        // If in development mode with no Supabase, show a more helpful message
+        if (!isSupabaseConfigured()) {
+          toast.info("Development mode: Enter any 6-digit code to continue");
+        } else {
+          toast.success("We've sent a verification code to your email");
         }
-      });
-      
-      if (error) throw error;
-      
-      // Move to verification step
-      setStep('verification');
-      toast.success("We've sent a verification code to your email");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to send verification code");
       console.error("Verification request error:", error);
     }
   };
   
-  const verifyOTP = async () => {
+  const handleVerifyOTP = async () => {
     if (otpValue.length !== 6) {
       toast.error("Please enter the complete verification code");
       return;
@@ -72,21 +73,17 @@ const SignUp: React.FC = () => {
     try {
       setVerifying(true);
       
-      // Verify OTP
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otpValue,
-        type: 'email'
-      });
+      // Use our authUtils function
+      const success = await verifyOTP(email, otpValue);
       
-      if (error) throw error;
-      
-      // Now complete the sign up with the form data
-      const formData = form.getValues();
-      await signUp(formData.email, formData.password, formData.name);
-      
-      toast.success("Email verified successfully!");
-      navigate('/sign-in');
+      if (success) {
+        // Now complete the sign up with the form data
+        const formData = form.getValues();
+        await signUp(formData.email, formData.password, formData.name);
+        
+        toast.success("Email verified successfully!");
+        navigate('/sign-in');
+      }
     } catch (error: any) {
       toast.error(error.message || "Invalid verification code");
       console.error("Verification error:", error);
@@ -95,20 +92,21 @@ const SignUp: React.FC = () => {
     }
   };
   
-  const resendOTP = async () => {
+  const handleResendOTP = async () => {
     try {
       setResending(true);
       
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
+      // Use our authUtils function
+      const success = await sendOTPVerification(email);
+      
+      if (success) {
+        // If in development mode with no Supabase, show a more helpful message
+        if (!isSupabaseConfigured()) {
+          toast.info("Development mode: Enter any 6-digit code to continue");
+        } else {
+          toast.success("A new verification code has been sent to your email");
         }
-      });
-      
-      if (error) throw error;
-      
-      toast.success("A new verification code has been sent to your email");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to resend verification code");
     } finally {
@@ -201,6 +199,11 @@ const SignUp: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 We've sent a 6-digit code to {email}
               </p>
+              {!isSupabaseConfigured() && (
+                <p className="text-sm font-medium text-amber-500">
+                  Development mode: Enter any 6 digits to verify
+                </p>
+              )}
             </div>
             
             <div className="space-y-4">
@@ -219,7 +222,7 @@ const SignUp: React.FC = () => {
               </div>
               
               <Button 
-                onClick={verifyOTP} 
+                onClick={handleVerifyOTP} 
                 className="w-full" 
                 size="lg"
                 disabled={verifying || otpValue.length !== 6}
@@ -243,7 +246,7 @@ const SignUp: React.FC = () => {
                   <Button 
                     variant="link" 
                     className="p-0 h-auto" 
-                    onClick={resendOTP}
+                    onClick={handleResendOTP}
                     disabled={resending}
                   >
                     {resending ? "Sending..." : "Resend"}
