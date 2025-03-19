@@ -19,7 +19,8 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
     }
     
     // Changed to allow new user creation
-    const { error } = await supabase.auth.signInWithOtp({
+    console.log('Sending OTP to:', email);
+    const { error, data } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: true, // Allow creating new users with OTP
@@ -27,6 +28,10 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
     });
     
     if (error) throw error;
+    
+    console.log('OTP response:', data);
+    toast.success(`Verification code sent to ${email}`);
+    toast.info('Please check your inbox and spam folder');
     
     return true;
   } catch (error: any) {
