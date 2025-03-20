@@ -207,15 +207,21 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      const profileEmail = appointment.profiles?.email;
-      const profilePhone = appointment.profiles?.phone;
+      const profileData = appointment.profiles;
+      // Fix: Access properties correctly on profile object, not array
+      const profileEmail = profileData ? profileData.email : null;
+      const profilePhone = profileData ? profileData.phone : null;
       
       if (profileEmail) {
+        const salonData = appointment.salons;
+        const serviceData = appointment.services;
+        
         await sendAppointmentReminder(
           profileEmail,
           {
-            salonName: appointment.salons?.name || 'the salon',
-            serviceName: appointment.services?.name || 'your service',
+            // Fix: Access properties correctly on salon/service objects, not arrays
+            salonName: salonData ? salonData.name : 'the salon',
+            serviceName: serviceData ? serviceData.name : 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
           },
@@ -270,15 +276,21 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      const profileEmail = appointment.profiles?.email;
-      const profilePhone = appointment.profiles?.phone;
+      const profileData = appointment.profiles;
+      // Fix: Access properties correctly on profile object, not array
+      const profileEmail = profileData ? profileData.email : null;
+      const profilePhone = profileData ? profileData.phone : null;
       
       if (profileEmail) {
+        const salonData = appointment.salons;
+        const serviceData = appointment.services;
+        
         await sendAppointmentReminder(
           profileEmail,
           {
-            salonName: appointment.salons?.name || 'the salon',
-            serviceName: appointment.services?.name || 'your service',
+            // Fix: Access properties correctly on salon/service objects, not arrays
+            salonName: salonData ? salonData.name : 'the salon',
+            serviceName: serviceData ? serviceData.name : 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
           },
