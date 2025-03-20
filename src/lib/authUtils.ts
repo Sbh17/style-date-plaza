@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -208,15 +207,15 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     // Send reminders for each appointment
     for (const appointment of appointments) {
       // Access profile data correctly
-      const profileData = appointment.profiles as { email: string; phone: string } | null;
+      const profileData = appointment.profiles as unknown as { email: string; phone: string };
       if (profileData) {
         const profileEmail = profileData.email;
         const profilePhone = profileData.phone;
         
         if (profileEmail) {
           // Access salon and service data correctly
-          const salonData = appointment.salons as { name: string } | null;
-          const serviceData = appointment.services as { name: string } | null;
+          const salonData = appointment.salons as unknown as { name: string };
+          const serviceData = appointment.services as unknown as { name: string };
           
           await sendAppointmentReminder(
             profileEmail,
@@ -279,15 +278,15 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     // Send reminders for each appointment
     for (const appointment of appointments) {
       // Access profile data correctly
-      const profileData = appointment.profiles as { email: string; phone: string } | null;
+      const profileData = appointment.profiles as unknown as { email: string; phone: string };
       if (profileData) {
         const profileEmail = profileData.email;
         const profilePhone = profileData.phone;
         
         if (profileEmail) {
           // Access salon and service data correctly
-          const salonData = appointment.salons as { name: string } | null;
-          const serviceData = appointment.services as { name: string } | null;
+          const salonData = appointment.salons as unknown as { name: string };
+          const serviceData = appointment.services as unknown as { name: string };
           
           await sendAppointmentReminder(
             profileEmail,

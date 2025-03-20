@@ -164,10 +164,12 @@ WITH CHECK (
 );
 
 -- Salon policies (updated for superadmin)
+DROP POLICY IF EXISTS "Salons are viewable by everyone" ON salons;
 CREATE POLICY "Salons are viewable by everyone" 
 ON salons FOR SELECT 
 USING (true);
 
+DROP POLICY IF EXISTS "Admins and superadmins can insert salons" ON salons;
 CREATE POLICY "Admins and superadmins can insert salons" 
 ON salons FOR INSERT 
 WITH CHECK (
@@ -178,6 +180,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Admins and superadmins can update salons" ON salons;
 CREATE POLICY "Admins and superadmins can update salons" 
 ON salons FOR UPDATE 
 USING (
@@ -188,6 +191,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Superadmins can delete salons" ON salons;
 CREATE POLICY "Superadmins can delete salons" 
 ON salons FOR DELETE 
 USING (
@@ -199,10 +203,12 @@ USING (
 );
 
 -- Service policies (similar to salons)
+DROP POLICY IF EXISTS "Services are viewable by everyone" ON services;
 CREATE POLICY "Services are viewable by everyone" 
 ON services FOR SELECT 
 USING (true);
 
+DROP POLICY IF EXISTS "Only admins can insert services" ON services;
 CREATE POLICY "Only admins can insert services" 
 ON services FOR INSERT 
 WITH CHECK (EXISTS (
@@ -211,6 +217,7 @@ WITH CHECK (EXISTS (
   AND profiles.role = 'admin'
 ));
 
+DROP POLICY IF EXISTS "Only admins can update services" ON services;
 CREATE POLICY "Only admins can update services" 
 ON services FOR UPDATE 
 USING (EXISTS (
@@ -220,10 +227,12 @@ USING (EXISTS (
 ));
 
 -- Stylist policies (similar to salons)
+DROP POLICY IF EXISTS "Stylists are viewable by everyone" ON stylists;
 CREATE POLICY "Stylists are viewable by everyone" 
 ON stylists FOR SELECT 
 USING (true);
 
+DROP POLICY IF EXISTS "Only admins can insert stylists" ON stylists;
 CREATE POLICY "Only admins can insert stylists" 
 ON stylists FOR INSERT 
 WITH CHECK (EXISTS (
@@ -232,6 +241,7 @@ WITH CHECK (EXISTS (
   AND profiles.role = 'admin'
 ));
 
+DROP POLICY IF EXISTS "Only admins can update stylists" ON stylists;
 CREATE POLICY "Only admins can update stylists" 
 ON stylists FOR UPDATE 
 USING (EXISTS (
@@ -241,10 +251,12 @@ USING (EXISTS (
 ));
 
 -- Appointment policies
+DROP POLICY IF EXISTS "Users can view their own appointments" ON appointments;
 CREATE POLICY "Users can view their own appointments" 
 ON appointments FOR SELECT 
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all appointments" ON appointments;
 CREATE POLICY "Admins can view all appointments" 
 ON appointments FOR SELECT 
 USING (EXISTS (
@@ -253,32 +265,39 @@ USING (EXISTS (
   AND profiles.role = 'admin'
 ));
 
+DROP POLICY IF EXISTS "Users can insert their own appointments" ON appointments;
 CREATE POLICY "Users can insert their own appointments" 
 ON appointments FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own appointments" ON appointments;
 CREATE POLICY "Users can update their own appointments" 
 ON appointments FOR UPDATE 
 USING (auth.uid() = user_id);
 
 -- Review policies
+DROP POLICY IF EXISTS "Reviews are viewable by everyone" ON reviews;
 CREATE POLICY "Reviews are viewable by everyone" 
 ON reviews FOR SELECT 
 USING (true);
 
+DROP POLICY IF EXISTS "Users can insert their own reviews" ON reviews;
 CREATE POLICY "Users can insert their own reviews" 
 ON reviews FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own reviews" ON reviews;
 CREATE POLICY "Users can update their own reviews" 
 ON reviews FOR UPDATE 
 USING (auth.uid() = user_id);
 
 -- News policies
+DROP POLICY IF EXISTS "Public news is viewable by everyone" ON news;
 CREATE POLICY "Public news is viewable by everyone" 
 ON news FOR SELECT 
 USING (is_approved = true);
 
+DROP POLICY IF EXISTS "Admins can view all news for their salon" ON news;
 CREATE POLICY "Admins can view all news for their salon" 
 ON news FOR SELECT 
 USING (EXISTS (
@@ -287,6 +306,7 @@ USING (EXISTS (
   AND profiles.role = 'admin'
 ));
 
+DROP POLICY IF EXISTS "Admins can insert news for their salon" ON news;
 CREATE POLICY "Admins can insert news for their salon" 
 ON news FOR INSERT 
 WITH CHECK (EXISTS (
@@ -295,6 +315,7 @@ WITH CHECK (EXISTS (
   AND profiles.role = 'admin'
 ));
 
+DROP POLICY IF EXISTS "Admins can update their salon's news" ON news;
 CREATE POLICY "Admins can update their salon's news" 
 ON news FOR UPDATE 
 USING (EXISTS (
@@ -306,6 +327,7 @@ USING (EXISTS (
 -- Add a few more helpful policies for superadmins
 
 -- Service policies (updated for superadmin)
+DROP POLICY IF EXISTS "Superadmins can manage all services" ON services;
 CREATE POLICY "Superadmins can manage all services" 
 ON services FOR ALL 
 USING (
@@ -317,6 +339,7 @@ USING (
 );
 
 -- Stylist policies (updated for superadmin)
+DROP POLICY IF EXISTS "Superadmins can manage all stylists" ON stylists;
 CREATE POLICY "Superadmins can manage all stylists" 
 ON stylists FOR ALL 
 USING (
@@ -328,6 +351,7 @@ USING (
 );
 
 -- Appointment policies (updated for superadmin)
+DROP POLICY IF EXISTS "Superadmins can view all appointments" ON appointments;
 CREATE POLICY "Superadmins can view all appointments" 
 ON appointments FOR SELECT 
 USING (
@@ -338,6 +362,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Superadmins can manage all appointments" ON appointments;
 CREATE POLICY "Superadmins can manage all appointments" 
 ON appointments FOR INSERT 
 WITH CHECK (
@@ -348,6 +373,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Superadmins can update all appointments" ON appointments;
 CREATE POLICY "Superadmins can update all appointments" 
 ON appointments FOR UPDATE 
 USING (
@@ -359,6 +385,7 @@ USING (
 );
 
 -- News policies (updated for superadmin)
+DROP POLICY IF EXISTS "Superadmins can manage all news" ON news;
 CREATE POLICY "Superadmins can manage all news" 
 ON news FOR ALL 
 USING (
