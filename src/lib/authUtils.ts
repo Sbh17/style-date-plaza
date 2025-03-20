@@ -101,3 +101,180 @@ export const verifyOTP = async (email: string, otp: string): Promise<boolean> =>
 export const isSupabaseConfigured = (): boolean => {
   return !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 };
+
+/**
+ * Send appointment reminder to user
+ * @param email User's email address
+ * @param appointmentDetails Details about the appointment
+ * @returns Promise resolving to success status
+ */
+export const sendAppointmentReminder = async (
+  email: string, 
+  appointmentDetails: {
+    salonName: string;
+    serviceName: string;
+    date: string;
+    time: string;
+  }
+): Promise<boolean> => {
+  try {
+    const { salonName, serviceName, date, time } = appointmentDetails;
+    
+    console.log('Sending appointment reminder to:', email, appointmentDetails);
+    
+    // Check if we have proper Supabase credentials
+    if (!isSupabaseConfigured()) {
+      console.warn('Using mock notification due to missing Supabase credentials');
+      toast.success(`Development mode: Reminder would be sent to ${email}`);
+      return true;
+    }
+    
+    // Use Supabase to send the email notification
+    // In a real implementation, you would use a server function or a service like SendGrid
+    const { error } = await supabase.functions.invoke('send-appointment-reminder', {
+      body: {
+        email,
+        salonName,
+        serviceName,
+        date,
+        time
+      }
+    });
+    
+    if (error) throw error;
+    
+    toast.success(`Appointment reminder sent to ${email}`);
+    return true;
+  } catch (error: any) {
+    console.error('Failed to send appointment reminder:', error);
+    toast.error(`Failed to send reminder: ${error.message || 'Unknown error'}`);
+    return false;
+  }
+};
+
+/**
+ * Check for upcoming appointments and send reminders if needed
+ * This function would typically be called by a cron job or scheduled task
+ * @returns Promise resolving to success status
+ */
+export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolean> => {
+  try {
+    console.log('Checking for upcoming appointments...');
+    
+    // Check if we have proper Supabase credentials
+    if (!isSupabaseConfigured()) {
+      console.warn('Using mock reminders due to missing Supabase credentials');
+      toast.info('Development mode: Would check for upcoming appointments');
+      return true;
+    }
+    
+    // Get tomorrow's date in ISO format (YYYY-MM-DD)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowDate = tomorrow.toISOString().split('T')[0];
+    
+    // Get all appointments scheduled for tomorrow
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(`
+        id, 
+        date, 
+        start_time,
+        services(name),
+        salons(name),
+        profiles(email)
+      `)
+      .eq('date', tomorrowDate)
+      .eq('status', 'confirmed');
+    
+    if (error) throw error;
+    
+    if (!appointments || appointments.length === 0) {
+      console.log('No upcoming appointments found for tomorrow');
+      return true;
+    }
+    
+    console.log(`Found ${appointments.length} appointments for tomorrow`);
+    
+    // Send reminders for each appointment
+    for (const appointment of appointments) {
+      if (appointment.profiles?.email) {
+        await sendAppointmentReminder(
+          appointment.profiles.email,
+          {
+            salonName: appointment.salons?.name || 'the salon',
+            serviceName: appointment.services?.name || 'your service',
+            date: new Date(appointment.date).toLocaleDateString(),
+            time: appointment.start_time
+          }
+        );
+      }
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Failed to check upcoming appointments:', error);
+    toast.error(`Failed to check upcoming appointments: ${error.message || 'Unknown error'}`);
+    return false;
+  }
+};
+
+/**
+ * Admin function to manually send reminders for selected appointments
+ * @param appointmentIds Array of appointment IDs to send reminders for
+ * @returns Promise resolving to success status
+ */
+export const sendManualAppointmentReminders = async (appointmentIds: string[]): Promise<boolean> => {
+  try {
+    console.log('Sending manual reminders for appointments:', appointmentIds);
+    
+    // Check if we have proper Supabase credentials
+    if (!isSupabaseConfigured()) {
+      console.warn('Using mock reminders due to missing Supabase credentials');
+      toast.success(`Development mode: Would send reminders for ${appointmentIds.length} appointments`);
+      return true;
+    }
+    
+    // Get details for the specified appointments
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(`
+        id, 
+        date, 
+        start_time,
+        services(name),
+        salons(name),
+        profiles(email)
+      `)
+      .in('id', appointmentIds);
+    
+    if (error) throw error;
+    
+    if (!appointments || appointments.length === 0) {
+      toast.error('No appointment details found');
+      return false;
+    }
+    
+    // Send reminders for each appointment
+    for (const appointment of appointments) {
+      if (appointment.profiles?.email) {
+        await sendAppointmentReminder(
+          appointment.profiles.email,
+          {
+            salonName: appointment.salons?.name || 'the salon',
+            serviceName: appointment.services?.name || 'your service',
+            date: new Date(appointment.date).toLocaleDateString(),
+            time: appointment.start_time
+          }
+        );
+      }
+    }
+    
+    toast.success(`Sent reminders for ${appointments.length} appointments`);
+    return true;
+  } catch (error: any) {
+    console.error('Failed to send manual reminders:', error);
+    toast.error(`Failed to send reminders: ${error.message || 'Unknown error'}`);
+    return false;
+  }
+};
