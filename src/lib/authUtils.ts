@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -189,9 +188,9 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
         id, 
         date, 
         start_time,
-        services(name),
-        salons(name),
-        profiles(email, phone)
+        services:service_id(name),
+        salons:salon_id(name),
+        profiles:user_id(email, phone)
       `)
       .eq('date', tomorrowDate)
       .eq('status', 'confirmed');
@@ -207,10 +206,10 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
+      // Fix: Access the joined data correctly
       const profileData = appointment.profiles;
-      // Fix: Access properties correctly on profile object, not array
-      const profileEmail = profileData ? profileData.email : null;
-      const profilePhone = profileData ? profileData.phone : null;
+      const profileEmail = profileData?.email;
+      const profilePhone = profileData?.phone;
       
       if (profileEmail) {
         const salonData = appointment.salons;
@@ -219,9 +218,8 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
         await sendAppointmentReminder(
           profileEmail,
           {
-            // Fix: Access properties correctly on salon/service objects, not arrays
-            salonName: salonData ? salonData.name : 'the salon',
-            serviceName: serviceData ? serviceData.name : 'your service',
+            salonName: salonData?.name || 'the salon',
+            serviceName: serviceData?.name || 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
           },
@@ -261,9 +259,9 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
         id, 
         date, 
         start_time,
-        services(name),
-        salons(name),
-        profiles(email, phone)
+        services:service_id(name),
+        salons:salon_id(name),
+        profiles:user_id(email, phone)
       `)
       .in('id', appointmentIds);
     
@@ -276,10 +274,10 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
+      // Fix: Access the joined data correctly
       const profileData = appointment.profiles;
-      // Fix: Access properties correctly on profile object, not array
-      const profileEmail = profileData ? profileData.email : null;
-      const profilePhone = profileData ? profileData.phone : null;
+      const profileEmail = profileData?.email;
+      const profilePhone = profileData?.phone;
       
       if (profileEmail) {
         const salonData = appointment.salons;
@@ -288,9 +286,8 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
         await sendAppointmentReminder(
           profileEmail,
           {
-            // Fix: Access properties correctly on salon/service objects, not arrays
-            salonName: salonData ? salonData.name : 'the salon',
-            serviceName: serviceData ? serviceData.name : 'your service',
+            salonName: salonData?.name || 'the salon',
+            serviceName: serviceData?.name || 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
           },
