@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -206,25 +207,26 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      // Fix: Access the joined data correctly
-      const profileData = appointment.profiles;
-      const profileEmail = profileData?.email;
-      const profilePhone = profileData?.phone;
-      
-      if (profileEmail) {
-        const salonData = appointment.salons;
-        const serviceData = appointment.services;
+      // Access joined tables correctly by treating them as objects, not arrays
+      if (appointment.profiles && typeof appointment.profiles === 'object') {
+        const profileEmail = appointment.profiles.email;
+        const profilePhone = appointment.profiles.phone;
         
-        await sendAppointmentReminder(
-          profileEmail,
-          {
-            salonName: salonData?.name || 'the salon',
-            serviceName: serviceData?.name || 'your service',
-            date: new Date(appointment.date).toLocaleDateString(),
-            time: appointment.start_time
-          },
-          profilePhone
-        );
+        if (profileEmail) {
+          const salonData = appointment.salons && typeof appointment.salons === 'object' ? appointment.salons : null;
+          const serviceData = appointment.services && typeof appointment.services === 'object' ? appointment.services : null;
+          
+          await sendAppointmentReminder(
+            profileEmail,
+            {
+              salonName: salonData && salonData.name ? salonData.name : 'the salon',
+              serviceName: serviceData && serviceData.name ? serviceData.name : 'your service',
+              date: new Date(appointment.date).toLocaleDateString(),
+              time: appointment.start_time
+            },
+            profilePhone
+          );
+        }
       }
     }
     
@@ -274,25 +276,26 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      // Fix: Access the joined data correctly
-      const profileData = appointment.profiles;
-      const profileEmail = profileData?.email;
-      const profilePhone = profileData?.phone;
-      
-      if (profileEmail) {
-        const salonData = appointment.salons;
-        const serviceData = appointment.services;
+      // Access joined tables correctly by treating them as objects, not arrays
+      if (appointment.profiles && typeof appointment.profiles === 'object') {
+        const profileEmail = appointment.profiles.email;
+        const profilePhone = appointment.profiles.phone;
         
-        await sendAppointmentReminder(
-          profileEmail,
-          {
-            salonName: salonData?.name || 'the salon',
-            serviceName: serviceData?.name || 'your service',
-            date: new Date(appointment.date).toLocaleDateString(),
-            time: appointment.start_time
-          },
-          profilePhone
-        );
+        if (profileEmail) {
+          const salonData = appointment.salons && typeof appointment.salons === 'object' ? appointment.salons : null;
+          const serviceData = appointment.services && typeof appointment.services === 'object' ? appointment.services : null;
+          
+          await sendAppointmentReminder(
+            profileEmail,
+            {
+              salonName: salonData && salonData.name ? salonData.name : 'the salon',
+              serviceName: serviceData && serviceData.name ? serviceData.name : 'your service',
+              date: new Date(appointment.date).toLocaleDateString(),
+              time: appointment.start_time
+            },
+            profilePhone
+          );
+        }
       }
     }
     

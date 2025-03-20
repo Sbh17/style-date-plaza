@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Bell, Calendar, Clock, CheckCircle2, RefreshCw, SendHorizonal } from 'lucide-react';
@@ -29,6 +28,7 @@ interface AppointmentWithDetails extends Appointment {
 interface TestReminderFormValues {
   email: string;
   phoneNumber?: string;
+  senderPhone?: string;
 }
 
 const AppointmentNotifications: React.FC = () => {
@@ -42,19 +42,18 @@ const AppointmentNotifications: React.FC = () => {
   const testForm = useForm<TestReminderFormValues>({
     defaultValues: {
       email: 'sabreboshnaq@icloud.com',
-      phoneNumber: '0549331362'
+      phoneNumber: '0549331362',
+      senderPhone: '0543923543'
     }
   });
 
   const fetchUpcomingAppointments = async () => {
     setIsLoading(true);
     try {
-      // Get current date
       const today = new Date();
       const tomorrow = new Date();
       tomorrow.setDate(today.getDate() + 1);
       
-      // Get appointments that are scheduled within the next 48 hours
       const todayString = today.toISOString().split('T')[0];
       const tomorrowString = tomorrow.toISOString().split('T')[0];
       
@@ -78,7 +77,6 @@ const AppointmentNotifications: React.FC = () => {
       if (error) throw error;
       
       if (data) {
-        // Fetch additional details for each appointment
         const appointmentsWithDetails = await Promise.all(
           data.map(async (appointment) => {
             let salon_name = '';
@@ -86,7 +84,6 @@ const AppointmentNotifications: React.FC = () => {
             let customer_name = '';
             let customer_email = '';
             
-            // Get salon details
             const { data: salonData } = await supabase
               .from('salons')
               .select('name')
@@ -95,7 +92,6 @@ const AppointmentNotifications: React.FC = () => {
               
             if (salonData) salon_name = salonData.name;
             
-            // Get service details
             const { data: serviceData } = await supabase
               .from('services')
               .select('name')
@@ -104,7 +100,6 @@ const AppointmentNotifications: React.FC = () => {
               
             if (serviceData) service_name = serviceData.name;
             
-            // Get customer details
             const { data: profileData } = await supabase
               .from('profiles')
               .select('name, email')
@@ -132,7 +127,6 @@ const AppointmentNotifications: React.FC = () => {
       console.error('Error fetching upcoming appointments:', error);
       toast.error(`Failed to load appointments: ${error.message || 'Unknown error'}`);
       
-      // For development, add some mock data
       if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
         const mockData: AppointmentWithDetails[] = [
           {
@@ -234,9 +228,16 @@ const AppointmentNotifications: React.FC = () => {
   const handleSendTestReminder = async (data: TestReminderFormValues) => {
     setIsSendingTest(true);
     try {
+      console.log('Sending test reminder to:', data.email, data.phoneNumber);
+      console.log('Sender phone:', data.senderPhone);
+      
       const success = await sendTestAppointmentReminder(data.email, data.phoneNumber);
       if (success) {
         toast.success('Test reminder sent successfully');
+        toast.info(`Email sent to: ${data.email}`);
+        if (data.phoneNumber) {
+          toast.info(`SMS sent to: ${data.phoneNumber}`);
+        }
         setShowTestForm(false);
       }
     } catch (error: any) {
@@ -276,7 +277,6 @@ const AppointmentNotifications: React.FC = () => {
         </div>
       </div>
       
-      {/* Test Reminder Section */}
       <Card>
         <CardHeader>
           <CardTitle>Test Appointment Reminder</CardTitle>
@@ -307,11 +307,25 @@ const AppointmentNotifications: React.FC = () => {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number (optional)</FormLabel>
+                      <FormLabel>Recipient Phone Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="0500000000" {...field} />
+                        <Input placeholder="0549331362" {...field} />
                       </FormControl>
-                      <FormDescription>Optional phone number for SMS reminder</FormDescription>
+                      <FormDescription>Phone number to receive SMS reminder</FormDescription>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={testForm.control}
+                  name="senderPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Phone Number (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0543923543" {...field} />
+                      </FormControl>
+                      <FormDescription>Phone number to send SMS from (ILS)</FormDescription>
                     </FormItem>
                   )}
                 />
