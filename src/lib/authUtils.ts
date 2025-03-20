@@ -76,6 +76,41 @@ export const verifyOTP = async (email: string, otp: string): Promise<boolean> =>
     
     if (error) throw error;
     
+    // If verification is successful, ensure user has a profile
+    if (data?.user) {
+      console.log('User verified:', data.user);
+      
+      // Check if profile exists
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (profileError && !profileError.message.includes('No rows found')) {
+        console.error('Error checking profile:', profileError);
+      }
+      
+      // If no profile exists, create one
+      if (!existingProfile) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: data.user.id,
+            name: email.split('@')[0], // Default name from email
+            email: email,
+            role: 'user' // Default role
+          });
+        
+        if (insertError) {
+          console.error('Failed to create profile:', insertError);
+          // Continue anyway as the auth was successful
+        } else {
+          console.log('Created new profile for user');
+        }
+      }
+    }
+    
     return true;
   } catch (error: any) {
     console.error('OTP verification failed:', error);
@@ -204,18 +239,26 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     console.log(`Found ${appointments.length} appointments for tomorrow`);
     
-    // Send reminders for each appointment
-    for (const appointment of appointments) {
-      // Access profile data correctly
-      const profileData = appointment.profiles as unknown as { email: string; phone: string };
+    // Process each appointment correctly
+    for (const appointment of appointments || []) {
+      // Access profile data correctly by getting the first item if it's an array
+      const profileData = Array.isArray(appointment.profiles) 
+        ? appointment.profiles[0] 
+        : (appointment.profiles as unknown as { email: string; phone: string });
+      
       if (profileData) {
         const profileEmail = profileData.email;
         const profilePhone = profileData.phone;
         
         if (profileEmail) {
-          // Access salon and service data correctly
-          const salonData = appointment.salons as unknown as { name: string };
-          const serviceData = appointment.services as unknown as { name: string };
+          // Access salon and service data correctly by getting the first item if it's an array
+          const salonData = Array.isArray(appointment.salons) 
+            ? appointment.salons[0] 
+            : (appointment.salons as unknown as { name: string });
+          
+          const serviceData = Array.isArray(appointment.services) 
+            ? appointment.services[0] 
+            : (appointment.services as unknown as { name: string });
           
           await sendAppointmentReminder(
             profileEmail,
@@ -255,7 +298,7 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
       return true;
     }
     
-    // Get details for the specified appointments
+    // Get details for the specified appointments and process them correctly
     const { data: appointments, error } = await supabase
       .from('appointments')
       .select(`
@@ -276,17 +319,25 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     }
     
     // Send reminders for each appointment
-    for (const appointment of appointments) {
-      // Access profile data correctly
-      const profileData = appointment.profiles as unknown as { email: string; phone: string };
+    for (const appointment of appointments || []) {
+      // Access profile data correctly by getting the first item if it's an array
+      const profileData = Array.isArray(appointment.profiles) 
+        ? appointment.profiles[0] 
+        : (appointment.profiles as unknown as { email: string; phone: string });
+      
       if (profileData) {
         const profileEmail = profileData.email;
         const profilePhone = profileData.phone;
         
         if (profileEmail) {
-          // Access salon and service data correctly
-          const salonData = appointment.salons as unknown as { name: string };
-          const serviceData = appointment.services as unknown as { name: string };
+          // Access salon and service data correctly by getting the first item if it's an array
+          const salonData = Array.isArray(appointment.salons) 
+            ? appointment.salons[0] 
+            : (appointment.salons as unknown as { name: string });
+          
+          const serviceData = Array.isArray(appointment.services) 
+            ? appointment.services[0] 
+            : (appointment.services as unknown as { name: string });
           
           await sendAppointmentReminder(
             profileEmail,
@@ -341,5 +392,95 @@ export const sendTestAppointmentReminder = async (
     console.error('Failed to send test reminder:', error);
     toast.error(`Failed to send test reminder: ${error.message || 'Unknown error'}`);
     return false;
+  }
+};
+
+/**
+ * Helper function to create a new user directly (for admin use)
+ * @param email User's email address
+ * @param password User's password
+ * @param name User's name
+ * @param role User's role (default: 'user')
+ * @returns Promise resolving to success status and user object
+ */
+export const createNewUser = async (
+  email: string,
+  password: string,
+  name: string,
+  role: 'user' | 'admin' | 'superadmin' = 'user'
+): Promise<{success: boolean, userId?: string, error?: string}> => {
+  try {
+    console.log('Creating new user:', email, name, role);
+    
+    // Check if we have proper Supabase credentials
+    if (!isSupabaseConfigured()) {
+      console.warn('Using mock user creation due to missing Supabase credentials');
+      toast.success(`Development mode: Would create user ${name} (${email}) with role ${role}`);
+      return { 
+        success: true, 
+        userId: crypto.randomUUID() // Mock UUID
+      };
+    }
+    
+    // 1. Create user in auth system
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role
+        }
+      }
+    });
+    
+    if (authError) {
+      console.error('Auth creation error:', authError);
+      return { 
+        success: false, 
+        error: authError.message 
+      };
+    }
+    
+    if (!authData.user?.id) {
+      return { 
+        success: false, 
+        error: 'Failed to get user ID after creation' 
+      };
+    }
+    
+    // 2. Create profile in profiles table
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: authData.user.id,
+        name,
+        email,
+        role
+      });
+    
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      // Even if profile creation fails, the auth user was created
+      return { 
+        success: true, 
+        userId: authData.user.id,
+        error: `User created but profile creation failed: ${profileError.message}`
+      };
+    }
+    
+    toast.success(`User ${name} created successfully with role: ${role}`);
+    return { 
+      success: true, 
+      userId: authData.user.id 
+    };
+    
+  } catch (error: any) {
+    console.error('Failed to create new user:', error);
+    toast.error(`Failed to create user: ${error.message || 'Unknown error'}`);
+    return { 
+      success: false, 
+      error: error.message || 'Unknown error creating user'
+    };
   }
 };
