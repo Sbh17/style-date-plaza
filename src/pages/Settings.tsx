@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Moon, Sun, Bell, Globe, Lock, Shield, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import UserProfileForm from '@/components/UserProfileForm';
 
 const Settings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -39,9 +39,11 @@ const Settings: React.FC = () => {
         <div className="space-y-1">
           <h1 className="text-xl font-semibold antialiased">Settings</h1>
           <p className="text-muted-foreground text-sm">
-            Manage your application preferences
+            Manage your application preferences and personal information
           </p>
         </div>
+
+        <UserProfileForm />
 
         <Card>
           <CardHeader>

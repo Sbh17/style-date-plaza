@@ -1,8 +1,7 @@
-
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create profiles table
+-- Create profiles table with additional fields
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users NOT NULL UNIQUE,
@@ -10,7 +9,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT NOT NULL UNIQUE,
   role TEXT NOT NULL CHECK (role IN ('user', 'admin', 'superadmin')) DEFAULT 'user',
   profile_image TEXT,
+  phone TEXT,
+  address TEXT,
+  occupation TEXT,
+  bio TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   CONSTRAINT user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE
 );
