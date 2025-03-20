@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Switch } from './ui/switch';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -140,14 +142,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Link>
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-8 w-8"
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+          
+          {/* Theme toggle button */}
+          <ToggleGroup type="single" value={theme} onValueChange={(value) => value && toggleTheme()}>
+            <ToggleGroupItem value="light" aria-label="Toggle light mode" className="px-2 py-1">
+              <Sun className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="dark" aria-label="Toggle dark mode" className="px-2 py-1">
+              <Moon className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
           <ViewCodeButton />
         </div>
       </div>

@@ -75,6 +75,11 @@
     --border: 25 25% 45%;
     --input: 25 25% 45%;
     --ring: 25 45% 50%;
+    
+    /* New white accent colors to break the brown in dark mode */
+    --white-accent: 0 0% 100%;
+    --white-accent-muted: 0 0% 92%;
+    --white-accent-subtle: 0 0% 85%;
   }
 }
 
@@ -129,6 +134,18 @@
     @apply bg-black/40 backdrop-blur-md border border-white/10;
   }
   
+  .white-accent {
+    @apply dark:bg-white/5 dark:hover:bg-white/8 dark:border-white/10 transition-all duration-200;
+  }
+  
+  .white-card {
+    @apply dark:bg-white/5 dark:border-white/10 dark:hover:border-white/20 transition-all duration-200;
+  }
+  
+  .white-button {
+    @apply dark:bg-white/10 dark:text-white dark:hover:bg-white/15 transition-all;
+  }
+  
   .text-balance {
     text-wrap: balance;
   }
@@ -161,6 +178,12 @@
 .dark .border,
 .dark [class*="border"] {
   @apply border-opacity-70 border-[1.5px];
+}
+
+/* Add white gradient accents for dark mode */
+.dark .white-gradient {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Mobile bottom navigation bar specific styles */

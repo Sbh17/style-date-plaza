@@ -186,8 +186,8 @@ const ViewCodeButton: React.FC = () => {
   const [isDevelopment, setIsDevelopment] = useState(false);
 
   useEffect(() => {
-    // Only show in development mode
-    setIsDevelopment(import.meta.env.DEV);
+    // Only show in development mode and set to false to hide it as requested
+    setIsDevelopment(false);
   }, []);
 
   if (!isDevelopment) return null;
