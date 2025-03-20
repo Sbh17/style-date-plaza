@@ -27,6 +27,8 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+const BUCKET_NAME = 'avatars';
+
 const UserProfileForm: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -120,6 +122,35 @@ const UserProfileForm: React.FC = () => {
     }
   };
 
+  // Ensure the avatars bucket exists
+  const ensureBucketExists = async () => {
+    try {
+      // Check if the bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME);
+      
+      if (!bucketExists) {
+        // Create the bucket if it doesn't exist
+        const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
+          public: true  // Make the bucket public so we can access images without authentication
+        });
+        
+        if (error) {
+          console.error('Error creating bucket:', error);
+          throw error;
+        }
+        
+        console.log('Created avatars bucket successfully');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error ensuring bucket exists:', error);
+      toast.error('Failed to prepare storage for uploads');
+      return false;
+    }
+  };
+
   // File upload handler for profile image
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
@@ -129,21 +160,30 @@ const UserProfileForm: React.FC = () => {
     const file = event.target.files[0];
     const fileExt = file.name.split('.').pop();
     const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-    const filePath = `profile-images/${fileName}`;
+    const filePath = `${fileName}`;
     
     setIsLoading(true);
     
     try {
+      // First ensure the bucket exists
+      const bucketReady = await ensureBucketExists();
+      if (!bucketReady) {
+        throw new Error('Storage not ready for upload');
+      }
+      
       // Upload image to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+        .from(BUCKET_NAME)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (uploadError) throw uploadError;
       
       // Get public URL
       const { data } = supabase.storage
-        .from('avatars')
+        .from(BUCKET_NAME)
         .getPublicUrl(filePath);
       
       if (data && data.publicUrl) {
