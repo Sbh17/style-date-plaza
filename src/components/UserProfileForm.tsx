@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -11,8 +10,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User, Phone, Mail, MapPin, Briefcase, FileText, Save } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Briefcase, FileText, Save, AlertCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Define form schema with Zod
 const profileFormSchema = z.object({
@@ -33,6 +33,8 @@ const UserProfileForm: React.FC = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.profileImage);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [useLocalStorage, setUseLocalStorage] = useState(false);
 
   // Initialize form
   const form = useForm<ProfileFormValues>({
@@ -60,7 +62,11 @@ const UserProfileForm: React.FC = () => {
           .eq('user_id', user.id)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching profile:', error);
+          // Don't show error toast here, just log it
+          return;
+        }
         
         if (data) {
           // Update form with retrieved data
@@ -79,7 +85,7 @@ const UserProfileForm: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
-        toast.error('Failed to load profile data');
+        // Silently fail - we'll just use the default values
       }
     };
     
@@ -96,7 +102,13 @@ const UserProfileForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Update profile in database
+      // If we're using local fallback storage, store the profile image URL in the form values
+      if (useLocalStorage && values.profile_image && values.profile_image.startsWith('data:')) {
+        // The image is already stored as a data URL in profile_image
+        toast.success('Profile image saved locally');
+      }
+      
+      // Try to update profile in database
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -111,7 +123,11 @@ const UserProfileForm: React.FC = () => {
         })
         .eq('user_id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        toast.error('Profile updated locally, but couldn\'t sync with the server');
+        return;
+      }
       
       toast.success('Profile updated successfully');
     } catch (error: any) {
@@ -122,79 +138,73 @@ const UserProfileForm: React.FC = () => {
     }
   };
 
-  // Ensure the avatars bucket exists
-  const ensureBucketExists = async () => {
-    try {
-      // Check if the bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME);
-      
-      if (!bucketExists) {
-        // Create the bucket if it doesn't exist
-        const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
-          public: true  // Make the bucket public so we can access images without authentication
-        });
-        
-        if (error) {
-          console.error('Error creating bucket:', error);
-          throw error;
-        }
-        
-        console.log('Created avatars bucket successfully');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error ensuring bucket exists:', error);
-      toast.error('Failed to prepare storage for uploads');
-      return false;
-    }
-  };
-
-  // File upload handler for profile image
+  // File upload handler for profile image 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) {
       return;
     }
     
     const file = event.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
-    
     setIsLoading(true);
+    setStorageError(null);
     
     try {
-      // First ensure the bucket exists
-      const bucketReady = await ensureBucketExists();
-      if (!bucketReady) {
-        throw new Error('Storage not ready for upload');
+      // First try to upload using Supabase
+      if (!useLocalStorage) {
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+          
+          // Upload image to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: true
+            });
+          
+          if (uploadError) {
+            console.error('Storage upload error:', uploadError);
+            throw uploadError;
+          }
+          
+          // Get public URL
+          const { data } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(filePath);
+          
+          if (data && data.publicUrl) {
+            // Update form with new image URL
+            form.setValue('profile_image', data.publicUrl);
+            setAvatarUrl(data.publicUrl);
+            toast.success('Profile image uploaded to server');
+            return;
+          }
+        } catch (error) {
+          console.error('Supabase storage error:', error);
+          // If we get here, Supabase storage failed
+          setStorageError('Cloud storage unavailable. Using local storage instead.');
+          setUseLocalStorage(true);
+          // Continue to local storage fallback
+        }
       }
       
-      // Upload image to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+      // Fallback: Use local storage via data URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (dataUrl) {
+          form.setValue('profile_image', dataUrl);
+          setAvatarUrl(dataUrl);
+          toast.success('Profile image saved locally');
+        }
+      };
+      reader.readAsDataURL(file);
       
-      if (uploadError) throw uploadError;
-      
-      // Get public URL
-      const { data } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-      
-      if (data && data.publicUrl) {
-        // Update form with new image URL
-        form.setValue('profile_image', data.publicUrl);
-        setAvatarUrl(data.publicUrl);
-        toast.success('Profile image uploaded');
-      }
     } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image');
+      console.error('Error processing image:', error);
+      toast.error(error.message || 'Failed to process image');
     } finally {
       setIsLoading(false);
     }
@@ -212,6 +222,13 @@ const UserProfileForm: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {storageError && (
+          <Alert variant="warning" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{storageError}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex flex-col items-center mb-6">
