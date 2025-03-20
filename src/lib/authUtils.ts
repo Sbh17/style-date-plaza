@@ -207,20 +207,22 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      // Access joined tables correctly by treating them as objects, not arrays
-      if (appointment.profiles && typeof appointment.profiles === 'object') {
-        const profileEmail = appointment.profiles.email;
-        const profilePhone = appointment.profiles.phone;
+      // Access profile data correctly
+      const profileData = appointment.profiles as { email: string; phone: string } | null;
+      if (profileData) {
+        const profileEmail = profileData.email;
+        const profilePhone = profileData.phone;
         
         if (profileEmail) {
-          const salonData = appointment.salons && typeof appointment.salons === 'object' ? appointment.salons : null;
-          const serviceData = appointment.services && typeof appointment.services === 'object' ? appointment.services : null;
+          // Access salon and service data correctly
+          const salonData = appointment.salons as { name: string } | null;
+          const serviceData = appointment.services as { name: string } | null;
           
           await sendAppointmentReminder(
             profileEmail,
             {
-              salonName: salonData && salonData.name ? salonData.name : 'the salon',
-              serviceName: serviceData && serviceData.name ? serviceData.name : 'your service',
+              salonName: salonData?.name || 'the salon',
+              serviceName: serviceData?.name || 'your service',
               date: new Date(appointment.date).toLocaleDateString(),
               time: appointment.start_time
             },
@@ -276,20 +278,22 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      // Access joined tables correctly by treating them as objects, not arrays
-      if (appointment.profiles && typeof appointment.profiles === 'object') {
-        const profileEmail = appointment.profiles.email;
-        const profilePhone = appointment.profiles.phone;
+      // Access profile data correctly
+      const profileData = appointment.profiles as { email: string; phone: string } | null;
+      if (profileData) {
+        const profileEmail = profileData.email;
+        const profilePhone = profileData.phone;
         
         if (profileEmail) {
-          const salonData = appointment.salons && typeof appointment.salons === 'object' ? appointment.salons : null;
-          const serviceData = appointment.services && typeof appointment.services === 'object' ? appointment.services : null;
+          // Access salon and service data correctly
+          const salonData = appointment.salons as { name: string } | null;
+          const serviceData = appointment.services as { name: string } | null;
           
           await sendAppointmentReminder(
             profileEmail,
             {
-              salonName: salonData && salonData.name ? salonData.name : 'the salon',
-              serviceName: serviceData && serviceData.name ? serviceData.name : 'your service',
+              salonName: salonData?.name || 'the salon',
+              serviceName: serviceData?.name || 'your service',
               date: new Date(appointment.date).toLocaleDateString(),
               time: appointment.start_time
             },

@@ -119,10 +119,13 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE news ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+-- Using DROP POLICY IF EXISTS to ensure we don't get duplicate policy errors
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile" 
 ON profiles FOR SELECT 
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Superadmins can view all profiles" ON profiles;
 CREATE POLICY "Superadmins can view all profiles" 
 ON profiles FOR SELECT 
 USING (
@@ -133,10 +136,12 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Users can update their own profile" 
 ON profiles FOR UPDATE 
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Superadmins can update any profile" ON profiles;
 CREATE POLICY "Superadmins can update any profile" 
 ON profiles FOR UPDATE 
 USING (
@@ -147,6 +152,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Superadmins can insert profiles" ON profiles;
 CREATE POLICY "Superadmins can insert profiles" 
 ON profiles FOR INSERT 
 WITH CHECK (
