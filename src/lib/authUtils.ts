@@ -115,17 +115,22 @@ export const sendAppointmentReminder = async (
     serviceName: string;
     date: string;
     time: string;
-  }
+  },
+  phoneNumber?: string
 ): Promise<boolean> => {
   try {
     const { salonName, serviceName, date, time } = appointmentDetails;
     
     console.log('Sending appointment reminder to:', email, appointmentDetails);
+    console.log('Phone number (if provided):', phoneNumber);
     
     // Check if we have proper Supabase credentials
     if (!isSupabaseConfigured()) {
       console.warn('Using mock notification due to missing Supabase credentials');
       toast.success(`Development mode: Reminder would be sent to ${email}`);
+      if (phoneNumber) {
+        toast.success(`Development mode: SMS would be sent to ${phoneNumber}`);
+      }
       return true;
     }
     
@@ -134,6 +139,7 @@ export const sendAppointmentReminder = async (
     const { error } = await supabase.functions.invoke('send-appointment-reminder', {
       body: {
         email,
+        phoneNumber,
         salonName,
         serviceName,
         date,
@@ -144,6 +150,9 @@ export const sendAppointmentReminder = async (
     if (error) throw error;
     
     toast.success(`Appointment reminder sent to ${email}`);
+    if (phoneNumber) {
+      toast.success(`SMS reminder sent to ${phoneNumber}`);
+    }
     return true;
   } catch (error: any) {
     console.error('Failed to send appointment reminder:', error);
@@ -182,7 +191,7 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
         start_time,
         services(name),
         salons(name),
-        profiles(email)
+        profiles(email, phone)
       `)
       .eq('date', tomorrowDate)
       .eq('status', 'confirmed');
@@ -198,15 +207,19 @@ export const checkAndSendUpcomingAppointmentReminders = async (): Promise<boolea
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      if (appointment.profiles?.email) {
+      const profileEmail = appointment.profiles?.email;
+      const profilePhone = appointment.profiles?.phone;
+      
+      if (profileEmail) {
         await sendAppointmentReminder(
-          appointment.profiles.email,
+          profileEmail,
           {
             salonName: appointment.salons?.name || 'the salon',
             serviceName: appointment.services?.name || 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
-          }
+          },
+          profilePhone
         );
       }
     }
@@ -244,7 +257,7 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
         start_time,
         services(name),
         salons(name),
-        profiles(email)
+        profiles(email, phone)
       `)
       .in('id', appointmentIds);
     
@@ -257,15 +270,19 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
     
     // Send reminders for each appointment
     for (const appointment of appointments) {
-      if (appointment.profiles?.email) {
+      const profileEmail = appointment.profiles?.email;
+      const profilePhone = appointment.profiles?.phone;
+      
+      if (profileEmail) {
         await sendAppointmentReminder(
-          appointment.profiles.email,
+          profileEmail,
           {
             salonName: appointment.salons?.name || 'the salon',
             serviceName: appointment.services?.name || 'your service',
             date: new Date(appointment.date).toLocaleDateString(),
             time: appointment.start_time
-          }
+          },
+          profilePhone
         );
       }
     }
@@ -275,6 +292,39 @@ export const sendManualAppointmentReminders = async (appointmentIds: string[]): 
   } catch (error: any) {
     console.error('Failed to send manual reminders:', error);
     toast.error(`Failed to send reminders: ${error.message || 'Unknown error'}`);
+    return false;
+  }
+};
+
+/**
+ * Send a test appointment reminder
+ * @param email Email address to send the reminder to
+ * @param phoneNumber Optional phone number to send SMS reminder to
+ * @returns Promise resolving to success status
+ */
+export const sendTestAppointmentReminder = async (
+  email: string,
+  phoneNumber?: string
+): Promise<boolean> => {
+  try {
+    console.log('Sending test appointment reminder to:', email);
+    if (phoneNumber) {
+      console.log('Also sending SMS reminder to:', phoneNumber);
+    }
+    
+    // Create test appointment details
+    const testAppointmentDetails = {
+      salonName: 'Beautiful Salon',
+      serviceName: 'Haircut',
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString(), // Tomorrow
+      time: '14:30'
+    };
+    
+    return await sendAppointmentReminder(email, testAppointmentDetails, phoneNumber);
+    
+  } catch (error: any) {
+    console.error('Failed to send test reminder:', error);
+    toast.error(`Failed to send test reminder: ${error.message || 'Unknown error'}`);
     return false;
   }
 };

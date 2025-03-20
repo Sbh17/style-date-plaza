@@ -1,15 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Bell, Calendar, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Bell, Calendar, Clock, CheckCircle2, RefreshCw, SendHorizonal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { checkAndSendUpcomingAppointmentReminders, sendManualAppointmentReminders } from '@/lib/authUtils';
+import { 
+  checkAndSendUpcomingAppointmentReminders, 
+  sendManualAppointmentReminders,
+  sendTestAppointmentReminder 
+} from '@/lib/authUtils';
 import { supabase } from '@/lib/supabase';
+import { useForm } from 'react-hook-form';
 import type { Appointment } from '@/lib/supabase';
 
 interface AppointmentWithDetails extends Appointment {
@@ -19,11 +26,25 @@ interface AppointmentWithDetails extends Appointment {
   customer_email?: string;
 }
 
+interface TestReminderFormValues {
+  email: string;
+  phoneNumber?: string;
+}
+
 const AppointmentNotifications: React.FC = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
   const [selectedAppointments, setSelectedAppointments] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const [isAutomatedRunning, setIsAutomatedRunning] = useState(false);
+  const [showTestForm, setShowTestForm] = useState(false);
+  
+  const testForm = useForm<TestReminderFormValues>({
+    defaultValues: {
+      email: 'sabreboshnaq@icloud.com',
+      phoneNumber: '0549331362'
+    }
+  });
 
   const fetchUpcomingAppointments = async () => {
     setIsLoading(true);
@@ -47,7 +68,9 @@ const AppointmentNotifications: React.FC = () => {
           status,
           salon_id,
           service_id,
-          user_id
+          user_id,
+          created_at,
+          updated_at
         `)
         .in('date', [todayString, tomorrowString])
         .in('status', ['pending', 'confirmed']);
@@ -99,7 +122,7 @@ const AppointmentNotifications: React.FC = () => {
               service_name,
               customer_name,
               customer_email
-            };
+            } as AppointmentWithDetails;
           })
         );
         
@@ -207,6 +230,22 @@ const AppointmentNotifications: React.FC = () => {
       setIsLoading(false);
     }
   };
+  
+  const handleSendTestReminder = async (data: TestReminderFormValues) => {
+    setIsSendingTest(true);
+    try {
+      const success = await sendTestAppointmentReminder(data.email, data.phoneNumber);
+      if (success) {
+        toast.success('Test reminder sent successfully');
+        setShowTestForm(false);
+      }
+    } catch (error: any) {
+      console.error('Error sending test reminder:', error);
+      toast.error(`Failed to send test reminder: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -236,6 +275,75 @@ const AppointmentNotifications: React.FC = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Test Reminder Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Test Appointment Reminder</CardTitle>
+          <CardDescription>
+            Send a test appointment reminder to verify your notification setup
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {showTestForm ? (
+            <Form {...testForm}>
+              <form onSubmit={testForm.handleSubmit(handleSendTestReminder)} className="space-y-4">
+                <FormField
+                  control={testForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} />
+                      </FormControl>
+                      <FormDescription>The email address to send the test reminder to</FormDescription>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={testForm.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0500000000" {...field} />
+                      </FormControl>
+                      <FormDescription>Optional phone number for SMS reminder</FormDescription>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isSendingTest}>
+                    <SendHorizonal className="h-4 w-4 mr-2" />
+                    {isSendingTest ? 'Sending...' : 'Send Test Reminder'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowTestForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Send a test reminder to verify your notification system is working correctly.
+              </p>
+              <Button onClick={() => setShowTestForm(true)}>
+                <Bell className="h-4 w-4 mr-2" />
+                Set Up Test Reminder
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>
