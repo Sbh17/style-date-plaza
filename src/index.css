@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -72,9 +71,9 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 25 30% 25%;
-    --input: 25 30% 25%;
-    --ring: 25 60% 30%;
+    --border: 25 30% 40%;
+    --input: 25 30% 40%;
+    --ring: 25 60% 45%;
   }
 }
 
@@ -154,6 +153,13 @@
   .page-exit {
     @apply animate-fade-out;
   }
+}
+
+/* Dark mode specific styles */
+.dark .card,
+.dark .border,
+.dark [class*="border"] {
+  @apply border-opacity-70 border-[1.5px];
 }
 
 /* Mobile bottom navigation bar specific styles */
