@@ -24,9 +24,9 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
+    // Default to light theme since we're focusing on white/mid-brown color scheme
     const savedTheme = localStorage.getItem('salonTheme');
-    return (savedTheme as Theme) || 
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    return (savedTheme as Theme) || 'light';
   });
 
   useEffect(() => {
