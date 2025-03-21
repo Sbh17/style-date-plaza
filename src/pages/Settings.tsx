@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,44 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 const Settings: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [language, setLanguage] = React.useState('english');
-  const [changesMade, setChangesMade] = React.useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [language, setLanguage] = useState('english');
+  const [dataSharing, setDataSharing] = useState(true);
+  const [changesMade, setChangesMade] = useState(false);
   const { user } = useAuth();
 
   // Create a ref for directions based on language
   const isRtl = language === 'hebrew' || language === 'arabic';
+  
+  // Fetch user settings on component mount
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('notifications_enabled, preferred_language, data_sharing')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching user settings:', error);
+          return;
+        }
+        
+        if (data) {
+          setNotificationsEnabled(data.notifications_enabled);
+          if (data.preferred_language) setLanguage(data.preferred_language);
+          if (data.data_sharing !== undefined) setDataSharing(data.data_sharing);
+        }
+      } catch (err) {
+        console.error('Error in fetching user settings:', err);
+      }
+    };
+    
+    fetchUserSettings();
+  }, [user]);
   
   const handleSaveChanges = async () => {
     if (!user?.id) {
@@ -29,19 +60,23 @@ const Settings: React.FC = () => {
     }
 
     try {
-      // Save notification preferences to database
+      // Save settings to database
       const { error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: user.id,
           notifications_enabled: notificationsEnabled,
           preferred_language: language,
+          data_sharing: dataSharing,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
         
       toast.success('Settings saved successfully');
       setChangesMade(false);
@@ -50,7 +85,7 @@ const Settings: React.FC = () => {
       document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     } catch (error: any) {
       console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
+      toast.error(error.message || 'Failed to save settings');
     }
   };
 
@@ -61,6 +96,11 @@ const Settings: React.FC = () => {
 
   const handleNotificationsChange = (checked: boolean) => {
     setNotificationsEnabled(checked);
+    setChangesMade(true);
+  };
+  
+  const handleDataSharingChange = (checked: boolean) => {
+    setDataSharing(checked);
     setChangesMade(true);
   };
 
@@ -182,7 +222,10 @@ const Settings: React.FC = () => {
                   Share usage data to help improve our services
                 </div>
               </div>
-              <Switch defaultChecked={true} onCheckedChange={() => setChangesMade(true)} />
+              <Switch 
+                checked={dataSharing} 
+                onCheckedChange={handleDataSharingChange} 
+              />
             </div>
             
             <Separator className="my-2" />

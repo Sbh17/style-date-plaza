@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,34 @@ const Profile: React.FC = () => {
   const [changesMade, setChangesMade] = useState(false);
   const { isAdmin, user, logout, goToAdmin } = useAuth();
   
+  // Fetch user settings on component mount
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('notifications_enabled')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching user settings:', error);
+          return;
+        }
+        
+        if (data) {
+          setNotificationsEnabled(data.notifications_enabled);
+        }
+      } catch (err) {
+        console.error('Error in fetching user settings:', err);
+      }
+    };
+    
+    fetchUserSettings();
+  }, [user]);
+  
   const handleSaveChanges = async () => {
     if (!user?.id) {
       toast.error('You must be logged in to save settings');
@@ -59,13 +87,16 @@ const Profile: React.FC = () => {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
         
       toast.success('Profile settings saved successfully');
       setChangesMade(false);
     } catch (error: any) {
       console.error('Error saving profile settings:', error);
-      toast.error('Failed to save profile settings');
+      toast.error(error.message || 'Failed to save profile settings');
     }
   };
 
@@ -161,8 +192,8 @@ const Profile: React.FC = () => {
         </Button>
       </div>
 
-      {/* Fixed Save Changes Button - Only visible when changes are made */}
-      {changesMade && (
+      {/* Fixed Save Changes Button */}
+      {changesMade ? (
         <div className="fixed bottom-20 left-0 right-0 bg-background/80 backdrop-blur-sm z-10 p-4 border-t">
           <Button 
             onClick={handleSaveChanges} 
@@ -172,7 +203,7 @@ const Profile: React.FC = () => {
             Save Changes
           </Button>
         </div>
-      )}
+      ) : null}
     </Layout>
   );
 };
