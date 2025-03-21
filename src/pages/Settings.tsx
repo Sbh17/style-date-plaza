@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +17,7 @@ const Settings: React.FC = () => {
   const [language, setLanguage] = useState('english');
   const [dataSharing, setDataSharing] = useState(true);
   const [changesMade, setChangesMade] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
 
   // Create a ref for directions based on language
@@ -26,27 +26,39 @@ const Settings: React.FC = () => {
   // Fetch user settings on component mount
   useEffect(() => {
     const fetchUserSettings = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        console.log("No user ID available for fetching settings");
+        return;
+      }
       
       try {
+        console.log("Fetching user settings for user ID:", user.id);
+        
         const { data, error } = await supabase
           .from('user_settings')
           .select('notifications_enabled, preferred_language, data_sharing')
           .eq('user_id', user.id)
           .single();
           
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching user settings:', error);
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log("No settings found for user, will create on first save");
+          } else {
+            console.error('Error fetching user settings:', error);
+            toast.error("Couldn't load your settings. Please try again later.");
+          }
           return;
         }
         
         if (data) {
+          console.log("User settings loaded:", data);
           setNotificationsEnabled(data.notifications_enabled);
           if (data.preferred_language) setLanguage(data.preferred_language);
           if (data.data_sharing !== undefined) setDataSharing(data.data_sharing);
         }
       } catch (err) {
-        console.error('Error in fetching user settings:', err);
+        console.error('Exception in fetching user settings:', err);
+        toast.error("An unexpected error occurred while loading settings");
       }
     };
     
@@ -59,9 +71,30 @@ const Settings: React.FC = () => {
       return;
     }
 
+    setIsSaving(true);
+    
     try {
+      console.log("Saving user settings:", {
+        user_id: user.id,
+        notifications_enabled: notificationsEnabled,
+        preferred_language: language,
+        data_sharing: dataSharing
+      });
+      
+      // Check if the user_settings table exists
+      const { error: tableCheckError } = await supabase
+        .from('user_settings')
+        .select('count')
+        .limit(1);
+        
+      if (tableCheckError) {
+        console.error("Table check error:", tableCheckError);
+        toast.error(`Database error: ${tableCheckError.message}. Please contact support.`);
+        return;
+      }
+      
       // Save settings to database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: user.id,
@@ -74,18 +107,22 @@ const Settings: React.FC = () => {
         });
 
       if (error) {
-        console.error('Database error:', error);
-        throw error;
+        console.error('Database error when saving settings:', error);
+        toast.error(error.message || 'Failed to save settings');
+        return;
       }
         
+      console.log("Settings saved successfully:", data);
       toast.success('Settings saved successfully');
       setChangesMade(false);
       
       // Apply RTL direction if needed
       document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     } catch (error: any) {
-      console.error('Error saving settings:', error);
-      toast.error(error.message || 'Failed to save settings');
+      console.error('Exception when saving settings:', error);
+      toast.error(error.message || 'An unexpected error occurred while saving settings');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -241,15 +278,20 @@ const Settings: React.FC = () => {
         </Card>
       </div>
 
-      {/* Fixed Save Changes Button */}
       <div className="fixed bottom-20 left-0 right-0 bg-background/80 backdrop-blur-sm z-10 p-4 border-t flex justify-end max-w-2xl mx-auto">
         <Button 
           onClick={handleSaveChanges} 
-          disabled={!changesMade}
+          disabled={!changesMade || isSaving}
           className="px-6"
         >
-          <Save className="mr-2 h-4 w-4" />
-          Save Changes
+          {isSaving ? (
+            "Saving..."
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
         </Button>
       </div>
     </Layout>

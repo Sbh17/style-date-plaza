@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
@@ -40,29 +39,41 @@ const Profile: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [changesMade, setChangesMade] = useState(false);
   const { isAdmin, user, logout, goToAdmin } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Fetch user settings on component mount
   useEffect(() => {
     const fetchUserSettings = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        console.log("No user ID available for fetching settings");
+        return;
+      }
       
       try {
+        console.log("Fetching user settings for user ID:", user.id);
+        
         const { data, error } = await supabase
           .from('user_settings')
           .select('notifications_enabled')
           .eq('user_id', user.id)
           .single();
           
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching user settings:', error);
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log("No settings found for user, will create on first save");
+          } else {
+            console.error('Error fetching user settings:', error);
+            toast.error("Couldn't load your settings. Please try again later.");
+          }
           return;
         }
         
         if (data) {
+          console.log("User settings loaded:", data);
           setNotificationsEnabled(data.notifications_enabled);
         }
       } catch (err) {
-        console.error('Error in fetching user settings:', err);
+        console.error('Exception in fetching user settings:', err);
+        toast.error("An unexpected error occurred while loading settings");
       }
     };
     
@@ -75,9 +86,26 @@ const Profile: React.FC = () => {
       return;
     }
 
+    setIsSaving(true);
+    
     try {
-      // Save notification preferences to database
-      const { error } = await supabase
+      console.log("Saving user settings:", {
+        user_id: user.id,
+        notifications_enabled: notificationsEnabled
+      });
+      
+      const { error: tableCheckError } = await supabase
+        .from('user_settings')
+        .select('count')
+        .limit(1);
+        
+      if (tableCheckError) {
+        console.error("Table check error:", tableCheckError);
+        toast.error(`Database error: ${tableCheckError.message}. Please contact support.`);
+        return;
+      }
+      
+      const { data, error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: user.id,
@@ -88,15 +116,19 @@ const Profile: React.FC = () => {
         });
 
       if (error) {
-        console.error('Database error:', error);
-        throw error;
+        console.error('Database error when saving settings:', error);
+        toast.error(error.message || 'Failed to save profile settings');
+        return;
       }
         
+      console.log("Settings saved successfully:", data);
       toast.success('Profile settings saved successfully');
       setChangesMade(false);
     } catch (error: any) {
-      console.error('Error saving profile settings:', error);
-      toast.error(error.message || 'Failed to save profile settings');
+      console.error('Exception when saving profile settings:', error);
+      toast.error(error.message || 'An unexpected error occurred while saving settings');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -192,15 +224,21 @@ const Profile: React.FC = () => {
         </Button>
       </div>
 
-      {/* Fixed Save Changes Button */}
       {changesMade ? (
         <div className="fixed bottom-20 left-0 right-0 bg-background/80 backdrop-blur-sm z-10 p-4 border-t">
           <Button 
             onClick={handleSaveChanges} 
             className="w-full"
+            disabled={isSaving}
           >
-            <Save className="mr-2 h-4 w-4" />
-            Save Changes
+            {isSaving ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
           </Button>
         </div>
       ) : null}
