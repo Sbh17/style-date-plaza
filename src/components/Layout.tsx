@@ -4,22 +4,18 @@ import { useLocation, Link } from 'react-router-dom';
 import BottomNavigation from './BottomNavigation';
 import ViewCodeButton from './ViewCodeButton';
 import { Button } from './ui/button';
+import ThemeToggle from './ThemeToggle';
 import { 
   LogIn, 
   UserPlus, 
   Shield, 
   User, 
   LogOut, 
-  Settings as SettingsIcon, 
-  Moon, 
-  Sun
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Switch } from './ui/switch';
-import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,7 +26,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const pathname = location.pathname;
   
   const { user, isAuthenticated, isAdmin, isSuperAdmin, logout, goToAdmin, goToSuperAdmin } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   // Animation based on route change
   useEffect(() => {
@@ -143,15 +138,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Button>
           )}
           
-          {/* Theme toggle button */}
-          <ToggleGroup type="single" value={theme} onValueChange={(value) => value && toggleTheme()}>
-            <ToggleGroupItem value="light" aria-label="Toggle light mode" className="px-2 py-1">
-              <Sun className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="dark" aria-label="Toggle dark mode" className="px-2 py-1">
-              <Moon className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+          {/* Modern theme toggle button */}
+          <ThemeToggle variant="pill" />
           
           <ViewCodeButton />
         </div>

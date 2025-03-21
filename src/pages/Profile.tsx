@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Link } from 'react-router-dom';
 
 const menuItems = [
@@ -36,8 +36,7 @@ const menuItems = [
 
 const Profile: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const { theme, toggleTheme } = useTheme();
-  const { user, isAdmin, logout, goToAdmin } = useAuth();
+  const { isAdmin, user, logout, goToAdmin } = useAuth();
   
   return (
     <Layout>
@@ -109,10 +108,7 @@ const Profile: React.FC = () => {
                 <Settings className="h-5 w-5 mr-3 text-muted-foreground" />
                 <span>Dark Mode</span>
               </div>
-              <Switch 
-                checked={theme === 'dark'} 
-                onCheckedChange={toggleTheme} 
-              />
+              <ThemeToggle variant="pill" />
             </div>
           </div>
         </div>

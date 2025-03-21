@@ -4,14 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Moon, Sun, Bell, Globe, Lock, Shield, Check } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
+import { Bell, Globe, Lock, Shield, Check, Sun, Moon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import UserProfileForm from '@/components/UserProfileForm';
 
 const Settings: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [language, setLanguage] = React.useState('english');
   const [changesMade, setChangesMade] = React.useState(false);
@@ -64,10 +63,7 @@ const Settings: React.FC = () => {
                   Switch between light and dark theme
                 </div>
               </div>
-              <Switch 
-                checked={theme === 'dark'} 
-                onCheckedChange={toggleTheme} 
-              />
+              <ThemeToggle variant="pill" />
             </div>
           </CardContent>
         </Card>
