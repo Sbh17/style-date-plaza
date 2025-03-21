@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const menuItems = [
   {
@@ -35,12 +37,46 @@ const menuItems = [
 ];
 
 const Profile: React.FC = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [changesMade, setChangesMade] = useState(false);
   const { isAdmin, user, logout, goToAdmin } = useAuth();
+  
+  const handleSaveChanges = async () => {
+    if (!user?.id) {
+      toast.error('You must be logged in to save settings');
+      return;
+    }
+
+    try {
+      // Save notification preferences to database
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          notifications_enabled: notificationsEnabled,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+        
+      toast.success('Profile settings saved successfully');
+      setChangesMade(false);
+    } catch (error: any) {
+      console.error('Error saving profile settings:', error);
+      toast.error('Failed to save profile settings');
+    }
+  };
+
+  const handleNotificationsChange = (checked: boolean) => {
+    setNotificationsEnabled(checked);
+    setChangesMade(true);
+  };
   
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold antialiased">My Profile</h1>
           <p className="text-muted-foreground text-sm">
@@ -99,7 +135,7 @@ const Profile: React.FC = () => {
               </div>
               <Switch 
                 checked={notificationsEnabled} 
-                onCheckedChange={setNotificationsEnabled} 
+                onCheckedChange={handleNotificationsChange} 
               />
             </div>
             
@@ -124,6 +160,19 @@ const Profile: React.FC = () => {
           Sign Out
         </Button>
       </div>
+
+      {/* Fixed Save Changes Button - Only visible when changes are made */}
+      {changesMade && (
+        <div className="fixed bottom-20 left-0 right-0 bg-background/80 backdrop-blur-sm z-10 p-4 border-t">
+          <Button 
+            onClick={handleSaveChanges} 
+            className="w-full"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Save Changes
+          </Button>
+        </div>
+      )}
     </Layout>
   );
 };

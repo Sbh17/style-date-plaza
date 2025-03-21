@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,31 +6,62 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Bell, Globe, Lock, Shield, Check, Sun, Moon } from 'lucide-react';
+import { Bell, Globe, Lock, Shield, Check, Sun, Moon, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import UserProfileForm from '@/components/UserProfileForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const Settings: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [language, setLanguage] = React.useState('english');
   const [changesMade, setChangesMade] = React.useState(false);
+  const { user } = useAuth();
 
   // Create a ref for directions based on language
   const isRtl = language === 'hebrew' || language === 'arabic';
   
-  const handleSaveChanges = () => {
-    toast.success('Settings saved successfully');
-    setChangesMade(false);
+  const handleSaveChanges = async () => {
+    if (!user?.id) {
+      toast.error('You must be logged in to save settings');
+      return;
+    }
+
+    try {
+      // Save notification preferences to database
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          notifications_enabled: notificationsEnabled,
+          preferred_language: language,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+        
+      toast.success('Settings saved successfully');
+      setChangesMade(false);
+      
+      // Apply RTL direction if needed
+      document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    } catch (error: any) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings');
+    }
   };
 
   const handleLanguageChange = (value: string) => {
     setLanguage(value);
     setChangesMade(true);
-    toast.success(`Language changed to ${value.charAt(0).toUpperCase() + value.slice(1)}`);
-    
-    // Apply RTL direction if needed
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+  };
+
+  const handleNotificationsChange = (checked: boolean) => {
+    setNotificationsEnabled(checked);
+    setChangesMade(true);
   };
 
   return (
@@ -88,7 +120,7 @@ const Settings: React.FC = () => {
               </div>
               <Switch 
                 checked={notificationsEnabled} 
-                onCheckedChange={setNotificationsEnabled} 
+                onCheckedChange={handleNotificationsChange} 
               />
             </div>
           </CardContent>
@@ -150,7 +182,7 @@ const Settings: React.FC = () => {
                   Share usage data to help improve our services
                 </div>
               </div>
-              <Switch defaultChecked={true} />
+              <Switch defaultChecked={true} onCheckedChange={() => setChangesMade(true)} />
             </div>
             
             <Separator className="my-2" />
@@ -164,16 +196,18 @@ const Settings: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
+      </div>
 
-        <div className="sticky bottom-20 bg-background z-10 pt-4 mt-8 border-t flex justify-end">
-          <Button 
-            onClick={handleSaveChanges} 
-            disabled={!changesMade}
-            className="px-6"
-          >
-            Save Changes
-          </Button>
-        </div>
+      {/* Fixed Save Changes Button */}
+      <div className="fixed bottom-20 left-0 right-0 bg-background/80 backdrop-blur-sm z-10 p-4 border-t flex justify-end max-w-2xl mx-auto">
+        <Button 
+          onClick={handleSaveChanges} 
+          disabled={!changesMade}
+          className="px-6"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Save Changes
+        </Button>
       </div>
     </Layout>
   );
