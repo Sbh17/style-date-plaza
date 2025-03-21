@@ -19,7 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, role?: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   goToAdmin: () => void;
@@ -75,6 +75,22 @@ const MOCK_USERS = [
     password: 'sabre123',
     role: 'superadmin' as UserRole,
     profileImage: 'https://ui-avatars.com/api/?name=Sabre+Boshnaq'
+  },
+  {
+    id: '5',
+    name: 'Haneen',
+    email: 'haneen@style.com',
+    password: 'password123',
+    role: 'user' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=Haneen'
+  },
+  {
+    id: '6',
+    name: 'Hanin',
+    email: 'hanin@admin.com',
+    password: 'admin123',
+    role: 'admin' as UserRole,
+    profileImage: 'https://ui-avatars.com/api/?name=Hanin'
   }
 ];
 
@@ -203,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isAuthenticated, isLoading, location.pathname, navigate]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, role?: string) => {
     try {
       setIsLoading(true);
       
@@ -218,11 +234,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.warn('Supabase auth failed, falling back to mock users:', error.message);
         
         const foundUser = MOCK_USERS.find(
-          u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+          u => u.email.toLowerCase() === email.toLowerCase() && 
+               u.password === password && 
+               (!role || u.role === role)
         );
         
         if (!foundUser) {
-          throw new Error('Invalid credentials');
+          throw new Error(role 
+            ? `Invalid credentials or you don't have ${role} permissions` 
+            : 'Invalid credentials');
         }
         
         // Create the user object, omitting the password
@@ -234,6 +254,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         toast.success(`Welcome back, ${foundUser.name}! (Using mock data)`);
       } else {
+        // For Supabase authenticated users, verify role if specified
+        if (role && data.user) {
+          // Get user profile to check role
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', data.user.id)
+            .single();
+            
+          if (profileError) throw new Error('Failed to retrieve user profile');
+          
+          if (profile.role !== role) {
+            // If role doesn't match, sign out and throw error
+            await supabase.auth.signOut();
+            throw new Error(`You don't have ${role} permissions`);
+          }
+        }
+        
         toast.success(`Signed in successfully!`);
       }
       
@@ -249,6 +287,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
       console.error('Login error:', error);
+      throw error; // Re-throw to handle in the sign-in component
     } finally {
       setIsLoading(false);
     }
