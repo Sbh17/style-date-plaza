@@ -6,70 +6,8 @@ import SalonCard from '@/components/SalonCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-
-// Mock data
-const MOCK_SALONS = [
-  {
-    id: "1",
-    name: "Elegance Beauty Salon",
-    imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.8,
-    ratingCount: 243,
-    location: "Downtown",
-    distance: "1.2 mi",
-    specialties: ["Hair", "Nails", "Facial"]
-  },
-  {
-    id: "2",
-    name: "Pure Bliss Spa & Salon",
-    imageUrl: "https://images.unsplash.com/photo-1470259078422-826894b933aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.7,
-    ratingCount: 189,
-    location: "Westside",
-    distance: "0.8 mi",
-    specialties: ["Massage", "Facial", "Waxing"]
-  },
-  {
-    id: "3",
-    name: "Modern Cuts & Color",
-    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.5,
-    ratingCount: 156,
-    location: "Midtown",
-    distance: "1.5 mi",
-    specialties: ["Color", "Haircut", "Styling"]
-  },
-  {
-    id: "4",
-    name: "Serenity Nail Spa",
-    imageUrl: "https://images.unsplash.com/photo-1610992235683-e39abc5e4fa8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.9,
-    ratingCount: 201,
-    location: "Eastside",
-    distance: "2.1 mi",
-    specialties: ["Manicure", "Pedicure", "Nail Art"]
-  },
-  {
-    id: "5",
-    name: "Glow Up Beauty Bar",
-    imageUrl: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.6,
-    ratingCount: 178,
-    location: "Uptown",
-    distance: "1.8 mi",
-    specialties: ["Makeup", "Lashes", "Brows"]
-  },
-  {
-    id: "6",
-    name: "Tranquility Wellness Spa",
-    imageUrl: "https://images.unsplash.com/photo-1600334129128-685c5582fd35?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.9,
-    ratingCount: 256,
-    location: "Riverside",
-    distance: "2.5 mi",
-    specialties: ["Hot Stone Massage", "Aromatherapy", "Meditation"]
-  }
-];
+import { useSalons, seedSalons, type SimplifiedSalon } from '@/hooks/useSalons';
+import { toast } from 'sonner';
 
 const SORT_OPTIONS = [
   { label: "Distance", value: "distance" },
@@ -91,17 +29,66 @@ const Explore: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("distance");
   const [showFilters, setShowFilters] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [salons, setSalons] = useState<typeof MOCK_SALONS>([]);
   
-  // Simulate loading
+  // Use our custom hook to fetch salons from Supabase
+  const { data: salons = [], isLoading, error } = useSalons();
+  
+  // Seed database with initial data if needed
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSalons(MOCK_SALONS);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    const initializeData = async () => {
+      if (salons.length === 0 && !isLoading && !error) {
+        const seeded = await seedSalons();
+        if (seeded) {
+          toast.success("Salon data has been initialized");
+          // Refetch data after seeding
+          window.location.reload();
+        }
+      }
+    };
+    
+    initializeData();
+  }, [salons, isLoading, error]);
+  
+  // Filter and sort the salons based on user input
+  const filteredSalons = React.useMemo(() => {
+    let result = [...salons];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(salon => 
+        salon.name.toLowerCase().includes(query) || 
+        salon.location.toLowerCase().includes(query) ||
+        (salon.specialties && salon.specialties.some(s => s.toLowerCase().includes(query)))
+      );
+    }
+    
+    // Apply category filters
+    if (selectedFilters.length > 0) {
+      result = result.filter(salon => 
+        salon.specialties && salon.specialties.some(specialty => 
+          selectedFilters.some(filter => 
+            specialty.toLowerCase().includes(filter.toLowerCase())
+          )
+        )
+      );
+    }
+    
+    // Apply sorting
+    if (sortBy === "distance") {
+      result.sort((a, b) => {
+        const distanceA = a.distance ? parseFloat(a.distance.split(" ")[0]) : 0;
+        const distanceB = b.distance ? parseFloat(b.distance.split(" ")[0]) : 0;
+        return distanceA - distanceB;
+      });
+    } else if (sortBy === "rating") {
+      result.sort((a, b) => b.rating - a.rating);
+    } else if (sortBy === "popularity") {
+      result.sort((a, b) => b.ratingCount - a.ratingCount);
+    }
+    
+    return result;
+  }, [salons, searchQuery, selectedFilters, sortBy]);
   
   const toggleFilter = (value: string) => {
     if (selectedFilters.includes(value)) {
@@ -221,7 +208,20 @@ const Explore: React.FC = () => {
         </div>
         
         <div className="space-y-4">
-          {loading ? (
+          {error && (
+            <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+              <p>Error loading salons: {error instanceof Error ? error.message : 'Unknown error'}</p>
+              <Button 
+                variant="outline" 
+                className="mt-2" 
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
+          
+          {isLoading ? (
             Array(6).fill(0).map((_, idx) => (
               <div key={idx} className="rounded-xl overflow-hidden animate-pulse">
                 <div className="aspect-[5/3] bg-muted"></div>
@@ -232,20 +232,34 @@ const Explore: React.FC = () => {
               </div>
             ))
           ) : (
-            salons.map((salon, index) => (
-              <SalonCard
-                key={salon.id}
-                id={salon.id}
-                name={salon.name}
-                imageUrl={salon.imageUrl}
-                rating={salon.rating}
-                ratingCount={salon.ratingCount}
-                location={salon.location}
-                distance={salon.distance}
-                specialties={salon.specialties}
-                className={`animation-delay-${index % 3}00`}
-              />
-            ))
+            filteredSalons.length > 0 ? (
+              filteredSalons.map((salon, index) => (
+                <SalonCard
+                  key={salon.id}
+                  id={salon.id}
+                  name={salon.name}
+                  imageUrl={salon.imageUrl}
+                  rating={salon.rating}
+                  ratingCount={salon.ratingCount}
+                  location={salon.location}
+                  distance={salon.distance}
+                  specialties={salon.specialties}
+                  className={`animation-delay-${index % 3}00`}
+                />
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No salons found matching your criteria</p>
+                {(searchQuery || selectedFilters.length > 0) && (
+                  <Button variant="outline" className="mt-2" onClick={() => {
+                    setSearchQuery("");
+                    setSelectedFilters([]);
+                  }}>
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            )
           )}
         </div>
       </div>
