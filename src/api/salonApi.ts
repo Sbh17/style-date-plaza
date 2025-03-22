@@ -1,5 +1,7 @@
+
 import { supabase, type Salon } from '@/lib/supabase';
 import { SimplifiedSalon } from '@/hooks/useSalons';
+import { toast } from 'sonner';
 
 // Get all salons
 export const getSalons = async (): Promise<SimplifiedSalon[]> => {
