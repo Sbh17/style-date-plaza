@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin } from 'lucide-react';
 import Layout from '@/components/Layout';
@@ -30,30 +29,25 @@ const Explore: React.FC = () => {
   const [sortBy, setSortBy] = useState("distance");
   const [showFilters, setShowFilters] = useState(false);
   
-  // Use our custom hook to fetch salons from Supabase
-  const { data: salons = [], isLoading, error } = useSalons();
+  const { data: salons = [], isLoading, error, refetch } = useSalons();
   
-  // Seed database with initial data if needed
   useEffect(() => {
     const initializeData = async () => {
       if (salons.length === 0 && !isLoading && !error) {
         const seeded = await seedSalons();
         if (seeded) {
           toast.success("Salon data has been initialized");
-          // Refetch data after seeding
-          window.location.reload();
+          refetch();
         }
       }
     };
     
     initializeData();
-  }, [salons, isLoading, error]);
+  }, [salons, isLoading, error, refetch]);
   
-  // Filter and sort the salons based on user input
   const filteredSalons = React.useMemo(() => {
     let result = [...salons];
     
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(salon => 
@@ -63,7 +57,6 @@ const Explore: React.FC = () => {
       );
     }
     
-    // Apply category filters
     if (selectedFilters.length > 0) {
       result = result.filter(salon => 
         salon.specialties && salon.specialties.some(specialty => 
@@ -74,7 +67,6 @@ const Explore: React.FC = () => {
       );
     }
     
-    // Apply sorting
     if (sortBy === "distance") {
       result.sort((a, b) => {
         const distanceA = a.distance ? parseFloat(a.distance.split(" ")[0]) : 0;
