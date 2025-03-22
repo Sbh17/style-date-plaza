@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -35,6 +36,7 @@ const UserProfileForm: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.profileImage);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [useLocalStorage, setUseLocalStorage] = useState(false);
+  const [profileExists, setProfileExists] = useState(false);
 
   // Initialize form
   const form = useForm<ProfileFormValues>({
@@ -56,6 +58,8 @@ const UserProfileForm: React.FC = () => {
       if (!user?.id) return;
       
       try {
+        console.log("Fetching profile data for user:", user.id);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -64,11 +68,18 @@ const UserProfileForm: React.FC = () => {
         
         if (error) {
           console.error('Error fetching profile:', error);
+          if (error.code === 'PGRST116') {
+            console.log("Profile doesn't exist yet, will be created on first save");
+            setProfileExists(false);
+          }
           // Don't show error toast here, just log it
           return;
         }
         
         if (data) {
+          console.log("Profile data fetched successfully:", data);
+          setProfileExists(true);
+          
           // Update form with retrieved data
           form.reset({
             name: data.name || user.name,
@@ -100,6 +111,7 @@ const UserProfileForm: React.FC = () => {
     }
     
     setIsLoading(true);
+    console.log("Saving profile with values:", values);
     
     try {
       // If we're using local fallback storage, store the profile image URL in the form values
@@ -108,27 +120,46 @@ const UserProfileForm: React.FC = () => {
         toast.success('Profile image saved locally');
       }
       
-      // Try to update profile in database
-      const { error } = await supabase
+      // Check if profiles table exists
+      const { error: tableCheckError } = await supabase
         .from('profiles')
-        .update({
-          name: values.name,
-          email: values.email,
-          phone: values.phone,
-          address: values.address,
-          occupation: values.occupation,
-          bio: values.bio,
-          profile_image: values.profile_image,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+        .select('count')
+        .limit(1);
       
-      if (error) {
-        console.error('Database update error:', error);
-        toast.error('Profile updated locally, but couldn\'t sync with the server');
+      if (tableCheckError) {
+        console.error("Table check error:", tableCheckError);
+        toast.error(`Database error: ${tableCheckError.message}. Please contact support.`);
         return;
       }
       
+      // Try to update or insert profile in database
+      const profileData = {
+        user_id: user.id,
+        name: values.name,
+        email: values.email,
+        phone: values.phone || null,
+        address: values.address || null,
+        occupation: values.occupation || null,
+        bio: values.bio || null,
+        profile_image: values.profile_image || null,
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log("Saving profile data:", profileData);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(profileData, {
+          onConflict: 'user_id'
+        });
+      
+      if (error) {
+        console.error('Database update error:', error);
+        toast.error(error.message || 'Failed to update profile');
+        return;
+      }
+      
+      console.log("Profile saved successfully:", data);
       toast.success('Profile updated successfully');
     } catch (error: any) {
       console.error('Error updating profile:', error);

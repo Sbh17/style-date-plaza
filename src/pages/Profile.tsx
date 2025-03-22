@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, LogOut, Settings, CreditCard, Heart, Bell, ChevronRight, Save } from 'lucide-react';
 import Layout from '@/components/Layout';
@@ -51,6 +52,18 @@ const Profile: React.FC = () => {
       try {
         console.log("Fetching user settings for user ID:", user.id);
         
+        // Check if user_settings table exists
+        const { error: tableCheckError } = await supabase
+          .from('user_settings')
+          .select('count')
+          .limit(1);
+          
+        if (tableCheckError) {
+          console.error("Table check error:", tableCheckError);
+          console.log("user_settings table may not exist yet");
+          return;
+        }
+        
         const { data, error } = await supabase
           .from('user_settings')
           .select('notifications_enabled')
@@ -94,6 +107,7 @@ const Profile: React.FC = () => {
         notifications_enabled: notificationsEnabled
       });
       
+      // Check if user_settings table exists and create it if not
       const { error: tableCheckError } = await supabase
         .from('user_settings')
         .select('count')
@@ -102,6 +116,7 @@ const Profile: React.FC = () => {
       if (tableCheckError) {
         console.error("Table check error:", tableCheckError);
         toast.error(`Database error: ${tableCheckError.message}. Please contact support.`);
+        setIsSaving(false);
         return;
       }
       
