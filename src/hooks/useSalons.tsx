@@ -33,10 +33,19 @@ export const useSalons = () => {
 // Function to seed the database with initial salon data
 export const seedSalons = async () => {
   try {
+    toast.loading('Seeding salon data...');
     const seeded = await seedSalonsData();
+    
+    if (seeded) {
+      toast.success('Salon data has been successfully seeded!');
+    } else {
+      toast.error('Failed to seed salon data. Check console for details.');
+    }
+    
     return seeded;
   } catch (error: any) {
     console.error('Error seeding salons:', error);
+    toast.error(`Error seeding salons: ${error.message}`);
     return false;
   }
 };
