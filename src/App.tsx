@@ -23,6 +23,7 @@ import StylistProfiles from "./pages/StylistProfiles";
 import LoyaltyProgram from "./pages/LoyaltyProgram";
 import Settings from "./pages/Settings";
 import Welcome from "./pages/Welcome";
+import EnvTest from "./pages/EnvTest";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const AppRoutes = () => (
     <Route path="/stylists" element={<StylistProfiles />} />
     <Route path="/loyalty" element={<LoyaltyProgram />} />
     <Route path="/settings" element={<Settings />} />
+    <Route path="/env-test" element={<EnvTest />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
