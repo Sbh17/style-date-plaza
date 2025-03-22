@@ -61,13 +61,13 @@ const MOCK_SALONS = [
   },
   {
     id: "6",
-    name: "Zen Day Spa",
-    imageUrl: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
-    rating: 4.8,
-    ratingCount: 216,
-    location: "Hillside",
-    distance: "3.0 mi",
-    specialties: ["Massage", "Facial", "Body Treatment"]
+    name: "Tranquility Wellness Spa",
+    imageUrl: "https://images.unsplash.com/photo-1600334129128-685c5582fd35?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    rating: 4.9,
+    ratingCount: 256,
+    location: "Riverside",
+    distance: "2.5 mi",
+    specialties: ["Hot Stone Massage", "Aromatherapy", "Meditation"]
   }
 ];
 
