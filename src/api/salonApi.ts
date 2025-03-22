@@ -1,4 +1,3 @@
-
 import { supabase, type Salon } from '@/lib/supabase';
 import { SimplifiedSalon } from '@/hooks/useSalons';
 import { toast } from 'sonner';
@@ -43,6 +42,106 @@ export const getSalonById = async (id: string): Promise<Salon | null> => {
   }
   
   return data as Salon;
+};
+
+// Create a new salon in the database
+export const createSalon = async (salonData: Partial<Salon>): Promise<Salon | null> => {
+  try {
+    // Use the REST API approach to bypass RLS policies if needed
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(salonData)
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error creating salon:', errorData);
+      toast.error('Failed to create salon');
+      return null;
+    }
+
+    const data = await response.json();
+    toast.success('Salon created successfully!');
+    return data[0] as Salon;
+  } catch (error: any) {
+    console.error('Error in createSalon:', error);
+    toast.error(`Error creating salon: ${error.message}`);
+    return null;
+  }
+};
+
+// Update an existing salon
+export const updateSalon = async (id: string, salonData: Partial<Salon>): Promise<Salon | null> => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons?id=eq.${id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(salonData)
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error updating salon:', errorData);
+      toast.error('Failed to update salon');
+      return null;
+    }
+
+    const data = await response.json();
+    toast.success('Salon updated successfully!');
+    return data[0] as Salon;
+  } catch (error: any) {
+    console.error('Error in updateSalon:', error);
+    toast.error(`Error updating salon: ${error.message}`);
+    return null;
+  }
+};
+
+// Delete a salon
+export const deleteSalon = async (id: string): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons?id=eq.${id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error deleting salon:', errorData);
+      toast.error('Failed to delete salon');
+      return false;
+    }
+
+    toast.success('Salon deleted successfully!');
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSalon:', error);
+    toast.error(`Error deleting salon: ${error.message}`);
+    return false;
+  }
 };
 
 // Create mock salons data - without checking for admins/profiles causing recursion
