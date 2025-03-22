@@ -1,12 +1,14 @@
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create profiles table with additional fields
+-- Create profiles table with additional fields and password field
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users NOT NULL UNIQUE,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
+  password TEXT, -- Added password field (not recommended for production)
   role TEXT NOT NULL CHECK (role IN ('user', 'admin', 'superadmin')) DEFAULT 'user',
   profile_image TEXT,
   phone TEXT,

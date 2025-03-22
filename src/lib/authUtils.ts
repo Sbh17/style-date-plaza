@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -451,13 +450,14 @@ export const createNewUser = async (
       };
     }
     
-    // 2. Create profile in profiles table
+    // 2. Create profile in profiles table with password for demo purposes
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
         user_id: authData.user.id,
         name,
         email,
+        password, // Store password in profiles table
         role
       });
     

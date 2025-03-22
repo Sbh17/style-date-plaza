@@ -311,13 +311,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authError) throw authError;
       
       if (authData.user) {
-        // Create a new profile in the profiles table
+        // Create a new profile in the profiles table with password for demo purposes
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
             user_id: authData.user.id,
             name,
             email,
+            password, // Store password in profiles table
             role: 'user' // Default role for new users
           });
         

@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client with fallback values for development
@@ -34,9 +33,14 @@ export type Profile = {
   user_id: string;
   name: string;
   email: string;
+  password?: string; // Added password field as optional
   role: 'user' | 'admin' | 'superadmin';
   profile_image: string | null;
   created_at: string;
+  phone?: string;
+  address?: string;
+  occupation?: string;
+  bio?: string;
 }
 
 export type Salon = {
