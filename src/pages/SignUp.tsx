@@ -7,11 +7,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Loader2, UserPlus, CheckCircle, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2, UserPlus, CheckCircle, Mail, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { sendOTPVerification, verifyOTP, isSupabaseConfigured } from '@/lib/authUtils';
+import { setupSuperAdmin } from '@/utils/adminUtils';
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -35,6 +36,7 @@ const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
   
   // Form for registration details
   const form = useForm<SignUpFormValues>({
@@ -124,6 +126,28 @@ const SignUp: React.FC = () => {
     }
   };
 
+  const createSuperAdmin = async () => {
+    setCreatingAdmin(true);
+    try {
+      // Create a superadmin with predefined credentials
+      const email = "superadmin@example.com";
+      const password = "Admin123!";
+      const name = "Super Admin";
+      
+      const success = await setupSuperAdmin(email, password, name);
+      
+      if (success) {
+        toast.success(`Superadmin created! Email: ${email}, Password: ${password}`);
+        navigate('/sign-in');
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create superadmin");
+      console.error("Superadmin creation error:", error);
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex items-center p-4 border-b">
@@ -142,65 +166,92 @@ const SignUp: React.FC = () => {
       
       <div className="flex-1 px-4 py-6 flex flex-col">
         {step === 'details' ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your Name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="your.email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? (
+          <>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="your.email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="******" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Continue with Email Verification
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+            
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-sm font-medium text-muted-foreground text-center mb-4">For demo purposes only</h3>
+              <Button 
+                variant="outline" 
+                className="w-full border-dashed border-primary" 
+                onClick={createSuperAdmin}
+                disabled={creatingAdmin}
+              >
+                {creatingAdmin ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Creating...
                   </>
                 ) : (
                   <>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Continue with Email Verification
+                    <Shield className="mr-2 h-4 w-4 text-amber-500" />
+                    Create Demo Super Admin
                   </>
                 )}
               </Button>
-            </form>
-          </Form>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                This creates a superadmin account with preset credentials
+              </p>
+            </div>
+          </>
         ) : (
           <div className="space-y-6">
             <div className="text-center space-y-2">
