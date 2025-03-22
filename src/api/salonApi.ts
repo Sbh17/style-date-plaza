@@ -1,6 +1,30 @@
+
 import { supabase, type Salon } from '@/lib/supabase';
 import { SimplifiedSalon } from '@/hooks/useSalons';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Function to check if the current user is a superadmin
+const isSuperAdmin = async (): Promise<boolean> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) return false;
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .single();
+      
+    if (error || !profile) return false;
+    
+    return profile.role === 'superadmin';
+  } catch (error) {
+    console.error('Error checking superadmin status:', error);
+    return false;
+  }
+};
 
 // Get all salons
 export const getSalons = async (): Promise<SimplifiedSalon[]> => {
@@ -44,9 +68,16 @@ export const getSalonById = async (id: string): Promise<Salon | null> => {
   return data as Salon;
 };
 
-// Create a new salon in the database
+// Create a new salon in the database (superadmin only)
 export const createSalon = async (salonData: Partial<Salon>): Promise<Salon | null> => {
   try {
+    // Check if user is superadmin
+    const superadmin = await isSuperAdmin();
+    if (!superadmin) {
+      toast.error('Only superadmins can create salons');
+      return null;
+    }
+    
     // Use the REST API approach to bypass RLS policies if needed
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons`,
@@ -79,9 +110,16 @@ export const createSalon = async (salonData: Partial<Salon>): Promise<Salon | nu
   }
 };
 
-// Update an existing salon
+// Update an existing salon (superadmin only)
 export const updateSalon = async (id: string, salonData: Partial<Salon>): Promise<Salon | null> => {
   try {
+    // Check if user is superadmin
+    const superadmin = await isSuperAdmin();
+    if (!superadmin) {
+      toast.error('Only superadmins can update salons');
+      return null;
+    }
+    
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons?id=eq.${id}`,
       {
@@ -113,9 +151,16 @@ export const updateSalon = async (id: string, salonData: Partial<Salon>): Promis
   }
 };
 
-// Delete a salon
+// Delete a salon (superadmin only)
 export const deleteSalon = async (id: string): Promise<boolean> => {
   try {
+    // Check if user is superadmin
+    const superadmin = await isSuperAdmin();
+    if (!superadmin) {
+      toast.error('Only superadmins can delete salons');
+      return false;
+    }
+    
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/salons?id=eq.${id}`,
       {
@@ -144,9 +189,16 @@ export const deleteSalon = async (id: string): Promise<boolean> => {
   }
 };
 
-// Create mock salons data - without checking for admins/profiles causing recursion
+// Create mock salons data (superadmin only)
 export const seedSalonsData = async (): Promise<boolean> => {
   try {
+    // Check if user is superadmin
+    const superadmin = await isSuperAdmin();
+    if (!superadmin) {
+      toast.error('Only superadmins can seed salon data');
+      return false;
+    }
+    
     const mockSalons = [
       {
         name: "Elegance Beauty Salon",
@@ -253,6 +305,51 @@ export const seedSalonsData = async (): Promise<boolean> => {
     return true;
   } catch (error: any) {
     console.error('Error in seedSalonsData:', error);
+    return false;
+  }
+};
+
+// Function to create a superadmin user
+export const createSuperAdminUser = async (email: string, password: string, name: string): Promise<boolean> => {
+  try {
+    // First, sign up the user with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    if (authError) {
+      console.error('Error creating user:', authError);
+      toast.error(`Failed to create user: ${authError.message}`);
+      return false;
+    }
+    
+    if (!authData.user) {
+      toast.error('Failed to create user - no user data returned');
+      return false;
+    }
+    
+    // Then create a profile with superadmin role
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: authData.user.id,
+        name,
+        email,
+        role: 'superadmin',
+      });
+    
+    if (profileError) {
+      console.error('Error creating superadmin profile:', profileError);
+      toast.error(`Failed to set superadmin role: ${profileError.message}`);
+      return false;
+    }
+    
+    toast.success(`Superadmin ${name} created successfully!`);
+    return true;
+  } catch (error: any) {
+    console.error('Error in createSuperAdminUser:', error);
+    toast.error(`Error creating superadmin: ${error.message}`);
     return false;
   }
 };
