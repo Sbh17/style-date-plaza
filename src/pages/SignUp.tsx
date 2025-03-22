@@ -70,7 +70,7 @@ const SignUp: React.FC = () => {
         if (!isSupabaseConfigured()) {
           toast.info("Development mode: Enter any 6-digit code to continue");
         } else {
-          toast.success("We've sent a verification code to your email");
+          toast.success("We've sent a verification code to your email. Please copy the 6-digit code from the email.");
         }
       }
     } catch (error: any) {
@@ -114,7 +114,7 @@ const SignUp: React.FC = () => {
         if (!isSupabaseConfigured()) {
           toast.info("Development mode: Enter any 6-digit code to continue");
         } else {
-          toast.success("A new verification code has been sent to your email");
+          toast.success("A new verification code has been sent to your email. Please check your inbox and copy the 6-digit code.");
         }
       }
     } catch (error: any) {
@@ -208,6 +208,9 @@ const SignUp: React.FC = () => {
               <h2 className="text-xl font-semibold">Verify your email</h2>
               <p className="text-sm text-muted-foreground">
                 We've sent a 6-digit code to {email}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Please check your inbox (and spam folder) and copy the 6-digit code from the email
               </p>
               {!isSupabaseConfigured() && (
                 <p className="text-sm font-medium text-amber-500">

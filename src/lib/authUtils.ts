@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
       email,
       options: {
         shouldCreateUser: true, // Allow creating new users with OTP
+        emailRedirectTo: window.location.origin // This ensures no redirect URL is used - users will copy the code directly
       }
     });
     
@@ -30,7 +32,7 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
     
     console.log('OTP response:', data);
     toast.success(`Verification code sent to ${email}`);
-    toast.info('Please check your inbox and spam folder');
+    toast.info('Please check your inbox and spam folder for the 6-digit code');
     
     return true;
   } catch (error: any) {
