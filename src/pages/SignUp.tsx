@@ -21,21 +21,36 @@ const signUpSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
+// Create a separate schema for OTP validation
+const otpSchema = z.object({
+  otp: z.string().length(6, { message: "Please enter the complete 6-digit code" })
+});
+
+type OtpFormValues = z.infer<typeof otpSchema>;
+
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
   const { signUp, isLoading } = useAuth();
   const [step, setStep] = useState<'details' | 'verification'>('details');
   const [email, setEmail] = useState('');
-  const [otpValue, setOtpValue] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   
+  // Form for registration details
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
+    },
+  });
+
+  // Form for OTP verification
+  const otpForm = useForm<OtpFormValues>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: {
+      otp: "",
     },
   });
 
@@ -64,17 +79,12 @@ const SignUp: React.FC = () => {
     }
   };
   
-  const handleVerifyOTP = async () => {
-    if (otpValue.length !== 6) {
-      toast.error("Please enter the complete verification code");
-      return;
-    }
-    
+  const handleVerifyOTP = async (values: OtpFormValues) => {
     try {
       setVerifying(true);
       
       // Use our authUtils function
-      const success = await verifyOTP(email, otpValue);
+      const success = await verifyOTP(email, values.otp);
       
       if (success) {
         // Now complete the sign up with the form data
@@ -206,53 +216,64 @@ const SignUp: React.FC = () => {
               )}
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <FormLabel>Verification Code</FormLabel>
-                <InputOTP maxLength={6} value={otpValue} onChange={setOtpValue}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              
-              <Button 
-                onClick={handleVerifyOTP} 
-                className="w-full" 
-                size="lg"
-                disabled={verifying || otpValue.length !== 6}
-              >
-                {verifying ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Verify & Create Account
-                  </>
-                )}
-              </Button>
-              
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Didn't receive the code?{" "}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto" 
-                    onClick={handleResendOTP}
-                    disabled={resending}
-                  >
-                    {resending ? "Sending..." : "Resend"}
-                  </Button>
-                </p>
-              </div>
+            <Form {...otpForm}>
+              <form onSubmit={otpForm.handleSubmit(handleVerifyOTP)} className="space-y-4">
+                <FormField
+                  control={otpForm.control}
+                  name="otp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Verification Code</FormLabel>
+                      <FormControl>
+                        <InputOTP maxLength={6} value={field.value} onChange={field.onChange}>
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button 
+                  type="submit"
+                  className="w-full" 
+                  size="lg"
+                  disabled={verifying || otpForm.watch("otp").length !== 6}
+                >
+                  {verifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Verify & Create Account
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+            
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Didn't receive the code?{" "}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto" 
+                  onClick={handleResendOTP}
+                  disabled={resending}
+                >
+                  {resending ? "Sending..." : "Resend"}
+                </Button>
+              </p>
             </div>
           </div>
         )}
