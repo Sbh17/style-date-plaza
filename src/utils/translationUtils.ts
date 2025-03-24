@@ -49,8 +49,8 @@ export const translateText = async (
   // Check if API key is provided
   if (!apiKey) {
     console.warn('No Google Translate API key provided. Using mock translation.');
-    // Return mock translation for development
-    return `[${targetLang}] ${text}`;
+    // Return a more visible mock translation for debugging
+    return `[MOCK_${targetLang}] ${text}`;
   }
   
   try {
@@ -65,8 +65,10 @@ export const translateText = async (
     url.searchParams.append('q', text);
     url.searchParams.append('target', targetLang);
     
+    console.log(`Translating to ${targetLang}: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`);
+    
     const response = await fetch(url.toString(), {
-      method: 'GET',
+      method: 'POST', // Change to POST as it's more reliable for translation
       headers: {
         'Content-Type': 'application/json',
       },
@@ -74,10 +76,17 @@ export const translateText = async (
     
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Translation failed');
+      console.error('Translation API error:', errorData);
+      throw new Error(errorData.error?.message || `Translation failed with status ${response.status}`);
     }
     
     const data = await response.json() as GoogleTranslateResponse;
+    if (!data.data?.translations?.[0]?.translatedText) {
+      console.error('Unexpected translation response format:', data);
+      throw new Error('Invalid translation response format');
+    }
+    
+    console.log(`Translation successful for "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`);
     return data.data.translations[0].translatedText;
   } catch (error: any) {
     console.error('Translation error:', error);
