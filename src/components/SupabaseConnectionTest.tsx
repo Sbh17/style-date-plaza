@@ -44,12 +44,22 @@ const SupabaseConnectionTest: React.FC = () => {
         throw error;
       }
       
-      // Try another table if accessible
-      const { error: settingsError } = await supabase.from('user_settings').select('count').limit(1);
+      // Try another table if accessible - using a try/catch to handle if the table doesn't exist
+      let settingsTableExists = false;
+      try {
+        const { error: settingsError } = await supabase
+          .from('user_settings')
+          .select('count')
+          .limit(1);
+        
+        settingsTableExists = !settingsError;
+      } catch (err) {
+        console.log('User settings table may not exist:', err);
+      }
       
       setStatus('connected');
       setDetails(`Successfully connected to Supabase! Profiles table is accessible. ${
-        settingsError ? 'User settings table not found or not accessible.' : 'User settings table is accessible.'
+        settingsTableExists ? 'User settings table is accessible.' : 'User settings table not found or not accessible.'
       }`);
     } catch (error: any) {
       setStatus('error');
