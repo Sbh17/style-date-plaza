@@ -49,6 +49,7 @@ export const translateText = async (
   // Check if API key is provided
   if (!apiKey) {
     console.warn('No Google Translate API key provided. Using mock translation.');
+    toast.warning('No translation API key set. Using mock translation.');
     // Return a more visible mock translation for debugging
     return `[MOCK_${targetLang}] ${text}`;
   }
@@ -59,30 +60,36 @@ export const translateText = async (
       return text;
     }
     
-    // Prepare request to Google Translate API
-    const url = new URL(GOOGLE_TRANSLATE_API_URL);
-    url.searchParams.append('key', apiKey);
-    url.searchParams.append('q', text);
-    url.searchParams.append('target', targetLang);
-    
     console.log(`Translating to ${targetLang}: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`);
     
-    const response = await fetch(url.toString(), {
-      method: 'POST', // Change to POST as it's more reliable for translation
+    // Format request payload according to Google Translate API specifications
+    const payload = {
+      q: text,
+      target: targetLang,
+      key: apiKey
+    };
+    
+    // Make the API request
+    const response = await fetch(GOOGLE_TRANSLATE_API_URL, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(payload),
     });
     
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Translation API error:', errorData);
+      toast.error(`Translation failed: ${errorData.error?.message || response.statusText}`);
       throw new Error(errorData.error?.message || `Translation failed with status ${response.status}`);
     }
     
     const data = await response.json() as GoogleTranslateResponse;
+    
     if (!data.data?.translations?.[0]?.translatedText) {
       console.error('Unexpected translation response format:', data);
+      toast.error('Invalid translation response format');
       throw new Error('Invalid translation response format');
     }
     
@@ -90,7 +97,7 @@ export const translateText = async (
     return data.data.translations[0].translatedText;
   } catch (error: any) {
     console.error('Translation error:', error);
-    toast.error(`Translation error: ${error.message}`);
+    toast.error(`Translation error: ${error.message || 'Unknown error'}`);
     return text; // Return original text on error
   }
 };
@@ -103,7 +110,7 @@ export const getLanguageDirection = (language: SupportedLanguage): 'ltr' | 'rtl'
 };
 
 /**
- * Get the language code for a given language name
+ * Get the language code for a given language
  */
 export const getLanguageCode = (language: SupportedLanguage): string => {
   return SUPPORTED_LANGUAGES[language]?.code || 'en';

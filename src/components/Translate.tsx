@@ -2,44 +2,46 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { translateText } from '@/utils/translationUtils';
+import { toast } from 'sonner';
 
 interface TranslateProps {
-  text: string;
-  children?: never;
+  text?: string;
+  children?: React.ReactNode;
 }
-
-interface TranslateChildrenProps {
-  children: React.ReactNode;
-  text?: never;
-}
-
-type Props = TranslateProps | TranslateChildrenProps;
 
 /**
  * Component to translate text or children content
  */
-const Translate: React.FC<Props> = (props) => {
+const Translate: React.FC<TranslateProps> = ({ text, children }) => {
   const { language, translateApiKey, languageCode } = useTranslation();
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Get the text to translate (either from props.text or by rendering children to string)
-  const textToTranslate = 'text' in props 
-    ? props.text 
-    : React.isValidElement(props.children) 
-      ? String(props.children)
-      : typeof props.children === 'string'
-        ? props.children
-        : Array.isArray(props.children)
-          ? React.Children.toArray(props.children)
-              .map(child => typeof child === 'string' ? child : '')
-              .join(' ')
-          : String(props.children || '');
+  const textToTranslate = text ?? (
+    typeof children === 'string' ? children :
+    React.isValidElement(children) ? String(children.props.children || '') :
+    Array.isArray(children) ? React.Children.toArray(children)
+        .map(child => typeof child === 'string' ? child : '')
+        .join(' ') :
+    String(children || '')
+  );
 
   useEffect(() => {
-    // Skip translation if we're in English or no text to translate
-    if (languageCode === 'en' || !textToTranslate) {
+    if (!textToTranslate || textToTranslate.trim() === '') {
+      setTranslatedText('');
+      return;
+    }
+    
+    // Skip translation if we're in English
+    if (languageCode === 'en') {
       setTranslatedText(textToTranslate);
+      return;
+    }
+    
+    // Only attempt translation if we have an API key
+    if (!translateApiKey) {
+      setTranslatedText(`[No API Key] ${textToTranslate}`);
       return;
     }
     
@@ -47,11 +49,13 @@ const Translate: React.FC<Props> = (props) => {
       setIsLoading(true);
       try {
         console.log('Translating:', textToTranslate, 'to', languageCode);
+        
         const result = await translateText(
           textToTranslate,
           languageCode,
           translateApiKey
         );
+        
         console.log('Translation result:', result);
         setTranslatedText(result);
       } catch (error) {
@@ -66,12 +70,18 @@ const Translate: React.FC<Props> = (props) => {
     translate();
   }, [textToTranslate, language, translateApiKey, languageCode]);
 
-  // Return original text if translation is loading or not ready
-  if (translatedText === null || isLoading || languageCode === 'en') {
-    return 'text' in props ? <>{props.text}</> : <>{props.children}</>;
+  // Show loading indicator or original text while translating
+  if (isLoading) {
+    return <span className="opacity-70">{textToTranslate}</span>;
   }
-
-  return <>{translatedText}</>;
+  
+  // Return translated text if available, otherwise original content
+  if (translatedText !== null) {
+    return <>{translatedText}</>;
+  }
+  
+  // Fallback to original content
+  return <>{text || children}</>;
 };
 
 export default Translate;
