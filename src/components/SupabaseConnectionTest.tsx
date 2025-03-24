@@ -37,29 +37,29 @@ const SupabaseConnectionTest: React.FC = () => {
         keyLast4
       });
 
-      // Test the connection with a simple query
+      // Test the connection with a simple query to profiles table
       const { data, error } = await supabase.from('profiles').select('count').limit(1);
       
       if (error) {
         throw error;
       }
       
-      // Try another table if accessible - using a try/catch to handle if the table doesn't exist
-      let settingsTableExists = false;
+      // Try another table that's in the schema (services)
+      let servicesTableAccessible = false;
       try {
-        const { error: settingsError } = await supabase
-          .from('user_settings')
+        const { error: servicesError } = await supabase
+          .from('services')
           .select('count')
           .limit(1);
         
-        settingsTableExists = !settingsError;
+        servicesTableAccessible = !servicesError;
       } catch (err) {
-        console.log('User settings table may not exist:', err);
+        console.log('Services table check error:', err);
       }
       
       setStatus('connected');
       setDetails(`Successfully connected to Supabase! Profiles table is accessible. ${
-        settingsTableExists ? 'User settings table is accessible.' : 'User settings table not found or not accessible.'
+        servicesTableAccessible ? 'Services table is accessible.' : 'Services table not found or not accessible.'
       }`);
     } catch (error: any) {
       setStatus('error');
