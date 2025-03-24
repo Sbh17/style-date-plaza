@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { translateText } from '@/utils/translationUtils';
-import { toast } from 'sonner';
 
 interface TranslateProps {
   text?: string;
@@ -13,7 +12,7 @@ interface TranslateProps {
  * Component to translate text or children content
  */
 const Translate: React.FC<TranslateProps> = ({ text, children }) => {
-  const { language, translateApiKey, languageCode } = useTranslation();
+  const { language, languageCode } = useTranslation();
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -39,22 +38,12 @@ const Translate: React.FC<TranslateProps> = ({ text, children }) => {
       return;
     }
     
-    // Only attempt translation if we have an API key
-    if (!translateApiKey) {
-      setTranslatedText(`[No API Key] ${textToTranslate}`);
-      return;
-    }
-    
     const translate = async () => {
       setIsLoading(true);
       try {
         console.log('Translating:', textToTranslate, 'to', languageCode);
         
-        const result = await translateText(
-          textToTranslate,
-          languageCode,
-          translateApiKey
-        );
+        const result = await translateText(textToTranslate, languageCode);
         
         console.log('Translation result:', result);
         setTranslatedText(result);
@@ -68,7 +57,7 @@ const Translate: React.FC<TranslateProps> = ({ text, children }) => {
     };
     
     translate();
-  }, [textToTranslate, language, translateApiKey, languageCode]);
+  }, [textToTranslate, language, languageCode]);
 
   // Show loading indicator or original text while translating
   if (isLoading) {
