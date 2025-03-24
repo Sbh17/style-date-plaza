@@ -9,6 +9,8 @@ interface TranslationContextType {
   setLanguage: (lang: SupportedLanguage) => void;
   direction: 'ltr' | 'rtl';
   languageCode: string;
+  translateApiKey: string;
+  setTranslateApiKey: (key: string) => void;
 }
 
 const TranslationContext = createContext<TranslationContextType>({
@@ -16,19 +18,22 @@ const TranslationContext = createContext<TranslationContextType>({
   setLanguage: () => {},
   direction: 'ltr',
   languageCode: 'en',
+  translateApiKey: '',
+  setTranslateApiKey: () => {},
 });
 
 export const useTranslation = () => useContext(TranslationContext);
 
 export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<SupportedLanguage>('english');
+  const [translateApiKey, setTranslateApiKey] = useState<string>('');
   const { user } = useAuth();
   
   // Direction based on language
   const direction = getLanguageDirection(language);
   const languageCode = SUPPORTED_LANGUAGES[language]?.code || 'en';
 
-  // Load user's language preference
+  // Load user's language preference and translate API key
   useEffect(() => {
     const fetchUserSettings = async () => {
       if (!user?.id) return;
@@ -36,7 +41,7 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         const { data, error } = await supabase
           .from('user_settings')
-          .select('preferred_language')
+          .select('preferred_language, translate_api_key')
           .eq('user_id', user.id)
           .single();
           
@@ -47,8 +52,14 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return;
         }
         
-        if (data && data.preferred_language && Object.keys(SUPPORTED_LANGUAGES).includes(data.preferred_language)) {
-          setLanguageState(data.preferred_language as SupportedLanguage);
+        if (data) {
+          if (data.preferred_language && Object.keys(SUPPORTED_LANGUAGES).includes(data.preferred_language)) {
+            setLanguageState(data.preferred_language as SupportedLanguage);
+          }
+          
+          if (data.translate_api_key) {
+            setTranslateApiKey(data.translate_api_key);
+          }
         }
       } catch (err) {
         console.error('Exception in fetching language settings:', err);
@@ -91,7 +102,9 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({ c
         language, 
         setLanguage, 
         direction, 
-        languageCode
+        languageCode,
+        translateApiKey,
+        setTranslateApiKey
       }}
     >
       {children}

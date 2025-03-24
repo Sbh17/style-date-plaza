@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +26,7 @@ const Settings: React.FC = () => {
     language, 
     setLanguage: setContextLanguage,
     translateApiKey,
-    setTranslateApiKey: setContextTranslateApiKey 
+    setTranslateApiKey
   } = useTranslation();
   
   const [localTranslateApiKey, setLocalTranslateApiKey] = useState(translateApiKey);
@@ -133,10 +132,10 @@ const Settings: React.FC = () => {
         return;
       }
         
-      console.log("Settings saved successfully:", data);
+      console.log("Settings saved successfully");
       
       // Update context with new values
-      setContextTranslateApiKey(localTranslateApiKey);
+      setTranslateApiKey(localTranslateApiKey);
       
       toast.success('Settings saved successfully');
       setChangesMade(false);
