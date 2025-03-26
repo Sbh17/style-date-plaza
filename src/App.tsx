@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import EnvTest from "./pages/EnvTest";
 import Welcome from "./pages/Welcome";
+import SuperAdminSetup from "./pages/SuperAdminSetup";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/env-test" element={<EnvTest />} />
+                <Route path="/setup-superadmin" element={<SuperAdminSetup />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TranslationProvider>
