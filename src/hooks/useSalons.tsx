@@ -20,13 +20,15 @@ export const useSalons = () => {
     queryFn: async (): Promise<SimplifiedSalon[]> => {
       try {
         const salons = await getSalons();
+        console.log("Fetched salons data:", salons);
         return salons;
       } catch (error: any) {
         console.error('Error fetching salons:', error);
+        toast.error(`Failed to fetch salons: ${error.message}`);
         throw error;
       }
     },
-    retry: 1,
+    retry: 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
