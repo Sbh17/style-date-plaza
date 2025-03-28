@@ -93,31 +93,31 @@ const Index: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [salons, setSalons] = useState(MOCK_SALONS);
-  const { loading: geoLoading, position, error, getPosition } = useGeolocation({ autoRequest: true });
+  const { loading: geoLoading, position, error, getPosition } = useGeolocation({ autoRequest: false });
   
-  // Simulate loading
+  // Simulate loading but make it faster (500ms instead of 1000ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto find nearby salons when position is available
+  // Only auto-find nearby salons when position changes after a manual request
   useEffect(() => {
     if (position && !loading) {
       findNearbySalons();
     }
-  }, [position, loading]);
+  }, [position]);
 
   // Find nearby salons
   const findNearbySalons = () => {
     if (!position) {
       if (!geoLoading) {
+        getPosition();
         toast({
-          title: "Location not available",
-          description: "Please allow location access to find nearby salons",
-          variant: "destructive",
+          title: "Finding nearby salons",
+          description: "Please allow location access to find salons near you",
         });
       }
       return;
@@ -156,7 +156,7 @@ const Index: React.FC = () => {
         title: "Nearby salons found",
         description: "Showing salons closest to your location",
       });
-    }, 1000);
+    }, 500);
   };
 
   return (
@@ -224,7 +224,7 @@ const Index: React.FC = () => {
                 </div>
               ))
             ) : (
-              salons.slice(0, 4).map((salon) => (
+              salons.map((salon) => (
                 <SalonCard
                   key={salon.id}
                   id={salon.id}
@@ -255,12 +255,12 @@ const Index: React.FC = () => {
                     ? "Detecting your location..." 
                     : position 
                       ? "Location detected" 
-                      : "Location access needed"}
+                      : "Find salons near you"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {position 
                     ? "Showing salons near you" 
-                    : "Allow location access to find nearby salons"}
+                    : "Enable location to find nearby salons"}
                 </p>
               </div>
             </div>
