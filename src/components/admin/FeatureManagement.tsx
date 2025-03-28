@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,28 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
-// Mock data for features
-const MOCK_FEATURES = [
+// Define type for Feature
+type Feature = {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'inactive' | 'in_development';
+  created_at: string;
+  is_premium: boolean;
+};
+
+// Define type for FeatureSuggestion
+type FeatureSuggestion = {
+  id: string;
+  title: string;
+  description: string;
+  submitted_by: string;
+  submitted_at: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+};
+
+// Mock data for features with explicit status typing
+const MOCK_FEATURES: Feature[] = [
   {
     id: '1',
     name: 'Online Booking',
@@ -40,8 +59,8 @@ const MOCK_FEATURES = [
   }
 ];
 
-// Mock data for feature suggestions
-const MOCK_SUGGESTIONS = [
+// Mock data for feature suggestions with explicit status typing
+const MOCK_SUGGESTIONS: FeatureSuggestion[] = [
   {
     id: '1',
     title: 'Mobile App Integration',
@@ -60,25 +79,8 @@ const MOCK_SUGGESTIONS = [
   }
 ];
 
-type Feature = {
-  id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'in_development';
-  created_at: string;
-  is_premium: boolean;
-};
-
-type FeatureSuggestion = {
-  id: string;
-  title: string;
-  description: string;
-  submitted_by: string;
-  submitted_at: string;
-  status: 'pending' | 'under_review' | 'approved' | 'rejected';
-};
-
 const FeatureManagement: React.FC = () => {
+  // State management with proper typing
   const [features, setFeatures] = useState<Feature[]>(MOCK_FEATURES);
   const [suggestions, setSuggestions] = useState<FeatureSuggestion[]>(MOCK_SUGGESTIONS);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -88,11 +90,16 @@ const FeatureManagement: React.FC = () => {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<FeatureSuggestion | null>(null);
   
-  // Form state
-  const [formData, setFormData] = useState({
+  // Form state with proper typing
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    status: Feature['status'];
+    is_premium: boolean;
+  }>({
     name: '',
     description: '',
-    status: 'inactive' as Feature['status'],
+    status: 'inactive',
     is_premium: false,
   });
   

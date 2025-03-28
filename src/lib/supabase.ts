@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client with fallback values for development
@@ -154,4 +155,27 @@ export type News = {
 export type AuthUser = {
   id: string;
   email: string;
+}
+
+// Feature type with properly typed status
+export type Feature = {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'inactive' | 'in_development';
+  created_at: string;
+  updated_at?: string;
+  is_premium: boolean;
+}
+
+// Feature suggestion type with properly typed status
+export type FeatureSuggestion = {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  submitted_at: string;
+  updated_at?: string;
+  user_id?: string;
+  submitted_by: string;
 }
