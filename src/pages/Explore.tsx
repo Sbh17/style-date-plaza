@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin } from 'lucide-react';
 import Layout from '@/components/Layout';
@@ -7,6 +8,50 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useSalons, seedSalons, type SimplifiedSalon } from '@/hooks/useSalons';
 import { toast } from 'sonner';
+
+// Mock data for immediate display
+const MOCK_SALONS = [
+  {
+    id: "1",
+    name: "Elegance Beauty Salon",
+    imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    rating: 4.8,
+    ratingCount: 243,
+    location: "Downtown",
+    distance: "1.2 mi",
+    specialties: ["Hair", "Nails", "Facial"]
+  },
+  {
+    id: "2",
+    name: "Pure Bliss Spa & Salon",
+    imageUrl: "https://images.unsplash.com/photo-1470259078422-826894b933aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    rating: 4.7,
+    ratingCount: 189,
+    location: "Westside",
+    distance: "0.8 mi",
+    specialties: ["Massage", "Facial", "Waxing"]
+  },
+  {
+    id: "3",
+    name: "Modern Cuts & Color",
+    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    rating: 4.5,
+    ratingCount: 156,
+    location: "Midtown",
+    distance: "1.5 mi",
+    specialties: ["Color", "Haircut", "Styling"]
+  },
+  {
+    id: "4",
+    name: "Serenity Nail Spa",
+    imageUrl: "https://images.unsplash.com/photo-1610992235683-e39abc5e4fa8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    rating: 4.9,
+    ratingCount: 201,
+    location: "Eastside",
+    distance: "2.1 mi",
+    specialties: ["Manicure", "Pedicure", "Nail Art"]
+  }
+];
 
 const SORT_OPTIONS = [
   { label: "Distance", value: "distance" },
@@ -28,25 +73,40 @@ const Explore: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("distance");
   const [showFilters, setShowFilters] = useState(false);
+  const [displaySalons, setDisplaySalons] = useState<SimplifiedSalon[]>(MOCK_SALONS);
+  const [isSeeding, setIsSeeding] = useState(false);
   
   const { data: salons = [], isLoading, error, refetch } = useSalons();
   
+  // Initialize data if needed and switch from mock to real data when available
   useEffect(() => {
     const initializeData = async () => {
-      if (salons.length === 0 && !isLoading && !error) {
+      // If we have real data from Supabase, use it
+      if (salons.length > 0) {
+        setDisplaySalons(salons);
+        return;
+      }
+      
+      // If no data and not already loading/seeding, try to seed the database
+      if (salons.length === 0 && !isLoading && !error && !isSeeding) {
+        setIsSeeding(true);
         const seeded = await seedSalons();
+        setIsSeeding(false);
+        
         if (seeded) {
           toast.success("Salon data has been initialized");
           refetch();
+        } else {
+          toast.error("Failed to initialize salon data. Using mock data instead.");
         }
       }
     };
     
     initializeData();
-  }, [salons, isLoading, error, refetch]);
+  }, [salons, isLoading, error, refetch, isSeeding]);
   
   const filteredSalons = React.useMemo(() => {
-    let result = [...salons];
+    let result = [...displaySalons];
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -80,7 +140,7 @@ const Explore: React.FC = () => {
     }
     
     return result;
-  }, [salons, searchQuery, selectedFilters, sortBy]);
+  }, [displaySalons, searchQuery, selectedFilters, sortBy]);
   
   const toggleFilter = (value: string) => {
     if (selectedFilters.includes(value)) {
@@ -92,6 +152,19 @@ const Explore: React.FC = () => {
   
   const clearFilters = () => {
     setSelectedFilters([]);
+  };
+  
+  const manualSeedData = async () => {
+    setIsSeeding(true);
+    const seeded = await seedSalons();
+    setIsSeeding(false);
+    
+    if (seeded) {
+      toast.success("Salon data has been seeded successfully!");
+      refetch();
+    } else {
+      toast.error("Failed to seed salon data.");
+    }
   };
   
   return (
@@ -203,17 +276,25 @@ const Explore: React.FC = () => {
           {error && (
             <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
               <p>Error loading salons: {error instanceof Error ? error.message : 'Unknown error'}</p>
-              <Button 
-                variant="outline" 
-                className="mt-2" 
-                onClick={() => window.location.reload()}
-              >
-                Try Again
-              </Button>
+              <div className="flex gap-2 mt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.reload()}
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={manualSeedData}
+                  disabled={isSeeding}
+                >
+                  {isSeeding ? "Seeding..." : "Seed Database"}
+                </Button>
+              </div>
             </div>
           )}
           
-          {isLoading ? (
+          {isLoading || isSeeding ? (
             Array(6).fill(0).map((_, idx) => (
               <div key={idx} className="rounded-xl overflow-hidden animate-pulse">
                 <div className="aspect-[5/3] bg-muted"></div>
@@ -242,12 +323,21 @@ const Explore: React.FC = () => {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No salons found matching your criteria</p>
-                {(searchQuery || selectedFilters.length > 0) && (
+                {(searchQuery || selectedFilters.length > 0) ? (
                   <Button variant="outline" className="mt-2" onClick={() => {
                     setSearchQuery("");
                     setSelectedFilters([]);
                   }}>
                     Clear filters
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="default" 
+                    className="mt-2" 
+                    onClick={manualSeedData}
+                    disabled={isSeeding}
+                  >
+                    {isSeeding ? "Seeding Database..." : "Seed Database with Sample Data"}
                   </Button>
                 )}
               </div>

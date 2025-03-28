@@ -22,30 +22,31 @@ export const useSalons = () => {
         const salons = await getSalons();
         return salons;
       } catch (error: any) {
-        toast.error(`Error fetching salons: ${error.message}`);
         console.error('Error fetching salons:', error);
-        return [];
+        throw error;
       }
     },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Function to seed the database with initial salon data
-export const seedSalons = async () => {
+export const seedSalons = async (): Promise<boolean> => {
   try {
-    toast.loading('Seeding salon data...');
+    toast.loading('Seeding salon data...', { id: 'seeding-toast' });
     const seeded = await seedSalonsData();
     
     if (seeded) {
-      toast.success('Salon data has been successfully seeded!');
+      toast.success('Salon data has been successfully seeded!', { id: 'seeding-toast' });
     } else {
-      toast.error('Failed to seed salon data. Check console for details.');
+      toast.error('Failed to seed salon data. Check console for details.', { id: 'seeding-toast' });
     }
     
     return seeded;
   } catch (error: any) {
     console.error('Error seeding salons:', error);
-    toast.error(`Error seeding salons: ${error.message}`);
+    toast.error(`Error seeding salons: ${error.message}`, { id: 'seeding-toast' });
     return false;
   }
 };
