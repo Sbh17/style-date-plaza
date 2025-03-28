@@ -19,7 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  login: (email: string, password: string, role?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   goToAdmin: () => void;
@@ -219,7 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isAuthenticated, isLoading, location.pathname, navigate]);
 
-  const login = async (email: string, password: string, role?: string) => {
+  const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       
@@ -235,14 +235,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         const foundUser = MOCK_USERS.find(
           u => u.email.toLowerCase() === email.toLowerCase() && 
-               u.password === password && 
-               (!role || u.role === role)
+               u.password === password
         );
         
         if (!foundUser) {
-          throw new Error(role 
-            ? `Invalid credentials or you don't have ${role} permissions` 
-            : 'Invalid credentials');
+          throw new Error('Invalid credentials');
         }
         
         // Create the user object, omitting the password
@@ -254,24 +251,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         toast.success(`Welcome back, ${foundUser.name}! (Using mock data)`);
       } else {
-        // For Supabase authenticated users, verify role if specified
-        if (role && data.user) {
-          // Get user profile to check role
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', data.user.id)
-            .single();
-            
-          if (profileError) throw new Error('Failed to retrieve user profile');
-          
-          if (profile.role !== role) {
-            // If role doesn't match, sign out and throw error
-            await supabase.auth.signOut();
-            throw new Error(`You don't have ${role} permissions`);
-          }
-        }
-        
         toast.success(`Signed in successfully!`);
       }
       

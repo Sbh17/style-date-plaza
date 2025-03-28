@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,8 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const signInSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(1, { message: "Please enter your password" }),
-  role: z.enum(['user', 'admin'], { required_error: "Please select a role" })
+  password: z.string().min(1, { message: "Please enter your password" })
 });
 
 type SignInFormValues = z.infer<typeof signInSchema>;
@@ -29,15 +27,14 @@ const SignIn: React.FC = () => {
     resolver: zodResolver(signInSchema),
     defaultValues: {
       email: "",
-      password: "",
-      role: "user"
+      password: ""
     },
   });
 
   const onSubmit = async (data: SignInFormValues) => {
     setAuthError('');
     try {
-      await login(data.email, data.password, data.role);
+      await login(data.email, data.password);
     } catch (error: any) {
       setAuthError(error.message);
     }
@@ -47,13 +44,11 @@ const SignIn: React.FC = () => {
   const fillAdminCredentials = () => {
     form.setValue('email', 'hanin@admin.com');
     form.setValue('password', 'admin123');
-    form.setValue('role', 'admin');
   };
 
   const fillUserCredentials = () => {
     form.setValue('email', 'haneen@style.com');
     form.setValue('password', 'password123');
-    form.setValue('role', 'user');
   };
 
   return (
@@ -104,41 +99,6 @@ const SignIn: React.FC = () => {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="******" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Sign in as</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex gap-6"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="user" />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer">
-                          Regular User
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="admin" />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer">
-                          Admin
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
