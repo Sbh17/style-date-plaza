@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Shield, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, Shield, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { setupSuperAdmin } from '@/utils/adminUtils';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ const SuperAdminSetup: React.FC = () => {
   const [password, setPassword] = useState('Admin123!');
   const [name, setName] = useState('Super Admin');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCreateSuperAdmin = async () => {
     if (!email || !password || !name) {
@@ -24,17 +25,21 @@ const SuperAdminSetup: React.FC = () => {
     }
 
     setIsLoading(true);
+    setError(null);
+    
     try {
       const created = await setupSuperAdmin(email, password, name);
       
       if (created) {
         setSuccess(true);
-        toast.success(`Superadmin created successfully!`);
-        toast.info(`Email: ${email}, Password: ${password}`);
+        toast.success(`Superadmin created/updated successfully!`);
+        toast.info(`Use these credentials to sign in: Email: ${email}, Password: ${password}`);
       } else {
+        setError('Failed to create superadmin. Please try again.');
         toast.error('Failed to create superadmin');
       }
     } catch (error: any) {
+      setError(error.message || 'An error occurred');
       toast.error(error.message || 'An error occurred');
       console.error('Error creating superadmin:', error);
     } finally {
@@ -43,7 +48,7 @@ const SuperAdminSetup: React.FC = () => {
   };
 
   const handleGoToSignIn = () => {
-    navigate('/welcome');
+    navigate('/sign-in');
   };
 
   return (
@@ -65,7 +70,7 @@ const SuperAdminSetup: React.FC = () => {
             Create Super Admin
           </CardTitle>
           <CardDescription>
-            Set up a superadmin user to test all features of the application
+            Set up a superadmin user to manage the application and test all features
           </CardDescription>
         </CardHeader>
         
@@ -118,6 +123,13 @@ const SuperAdminSetup: React.FC = () => {
                   Password must be at least 6 characters long
                 </p>
               </div>
+
+              {error && (
+                <div className="p-3 bg-destructive/10 rounded-md flex items-start gap-2 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -151,7 +163,7 @@ const SuperAdminSetup: React.FC = () => {
           )}
           {!success && (
             <p className="text-xs text-center text-muted-foreground pt-2">
-              This is for testing purposes only. You'll be able to sign in with these credentials.
+              This creates a superadmin account that you can use to access all features of the application.
             </p>
           )}
         </CardFooter>

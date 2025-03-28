@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { isSupabaseConfigured } from '@/lib/authUtils';
+import { createNewUser } from '@/lib/authUtils';
 
 /**
  * Setup a super admin user for quick demo purposes
@@ -37,7 +38,7 @@ export const setupSuperAdmin = async (
       return true;
     }
     
-    // Check if user already exists
+    // Check if user already exists with this email
     const { data: existingUsers, error: userCheckError } = await supabase
       .from('profiles')
       .select('*')
@@ -49,50 +50,31 @@ export const setupSuperAdmin = async (
     }
     
     if (existingUsers && existingUsers.length > 0) {
-      console.log('Superadmin already exists, logging in');
-      toast.success(`Superadmin already exists: ${email} / ${password}`);
+      console.log('User with this email already exists, updating role to superadmin');
+      
+      // Update the existing user's role to superadmin
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: 'superadmin' })
+        .eq('email', email);
+        
+      if (updateError) {
+        console.error('Error updating user role:', updateError);
+        throw updateError;
+      }
+      
+      toast.success(`${email} updated to superadmin role. You can now sign in.`);
       return true;
     }
     
-    // Create user in auth
-    const { data: userData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          role: 'superadmin'
-        }
-      }
-    });
+    // If the user doesn't exist, create a new superadmin user
+    const result = await createNewUser(email, password, name, 'superadmin');
     
-    if (signUpError) {
-      console.error('Error creating superadmin auth:', signUpError);
-      throw signUpError;
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create superadmin');
     }
     
-    if (!userData.user) {
-      throw new Error('Failed to create superadmin user');
-    }
-    
-    // Create the profile with superadmin role
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: userData.user.id,
-        name,
-        email,
-        password, // Store password in profiles table
-        role: 'superadmin',
-        profile_image: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`
-      });
-    
-    if (profileError) {
-      console.error('Error creating superadmin profile:', profileError);
-      throw profileError;
-    }
-    
-    toast.success(`Superadmin created: ${email} / ${password}`);
+    toast.success(`Superadmin created successfully: ${email}`);
     return true;
   } catch (error: any) {
     console.error('Error setting up superadmin:', error);
