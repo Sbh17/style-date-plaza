@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 // For development only - check for environment variables
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
@@ -7,13 +8,16 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 }
 
 // Test the connection and log the result
-supabase.auth.onAuthStateChange((event, session) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN') {
     console.log('User signed in successfully');
   } else if (event === 'SIGNED_OUT') {
     console.log('User signed out');
   }
 });
+
+// Re-export the supabase client for other modules to use
+export const supabase = supabaseClient;
 
 // Define types for database schema
 export type Profile = {

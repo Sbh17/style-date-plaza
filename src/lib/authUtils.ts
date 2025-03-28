@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 /**
@@ -25,7 +25,7 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
       email,
       options: {
         shouldCreateUser: false, // We'll create the user after verification
-        captchaToken: undefined // No captcha for this flow
+        emailRedirectTo: undefined // Don't use redirect URLs to avoid localhost issues
       }
     });
     

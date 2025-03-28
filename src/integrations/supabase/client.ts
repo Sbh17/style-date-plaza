@@ -14,6 +14,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false, // Explicitly disable URL detection to prevent issue with localhost redirects
-    flowType: 'pkce' // Use PKCE flow for more secure authentication
+    flowType: 'pkce', // Use PKCE flow for more secure authentication
+    storage: localStorage, // Explicitly set storage to localStorage
+    storageKey: 'supabase.auth.token', // Set a specific key for storage
   }
 });

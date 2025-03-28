@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { sendOTPVerification, verifyOTP, isSupabaseConfigured } from '@/lib/authUtils';
 import { setupSuperAdmin } from '@/utils/adminUtils';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -57,11 +58,13 @@ const SignUp: React.FC = () => {
     try {
       setEmail(data.email);
       
-      const { data: userExists, error: checkError } = await supabase.auth.admin
-        ?.getUserByEmail(data.email)
-        .catch(() => ({ data: null, error: null }));
+      // Check if email is already registered
+      const { data: userList, error: checkError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', data.email);
       
-      if (userExists) {
+      if (userList && userList.length > 0) {
         toast.error("This email is already registered. Please sign in instead.");
         return;
       }
