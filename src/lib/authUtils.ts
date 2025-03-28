@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -18,14 +17,13 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
       return true;
     }
     
-    // Use signInWithOtp with createUser: false to ensure we only send the OTP
-    // and don't create a user yet
+    // Send OTP without using email redirects - the code will be shown in the email
     console.log('Sending OTP to:', email);
     const { error, data } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: true, // We want to allow user creation with OTP
-        emailRedirectTo: window.location.origin + '/sign-in' // Redirect after verification
+        shouldCreateUser: true, // Allow user creation
+        // Don't use redirectTo to avoid the localhost issue - users will manually enter the code
       }
     });
     
