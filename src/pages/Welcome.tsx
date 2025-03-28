@@ -1,233 +1,326 @@
 
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronRight, Calendar, Scissors, User, MapPin, Star, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Scissors, Calendar, Search, Settings, ArrowRight, RotateCw, Globe, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import ThemeToggle from '@/components/ThemeToggle';
-import Translate from '@/components/Translate';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from '@/contexts/TranslationContext';
-import { SUPPORTED_LANGUAGES, SupportedLanguage } from '@/utils/translationUtils';
-import { toast } from 'sonner';
+import Layout from '@/components/Layout';
+import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/lib/supabase';
 
-const Feature = ({ 
-  icon: Icon, 
-  title, 
-  description, 
-  delay = 0 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  description: string; 
-  delay?: number;
-}) => {
-  return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2"
-          style={{ animationDelay: `${delay}ms` }}>
-      <CardContent className="p-6 space-y-2 text-center">
-        <div className="rounded-full bg-primary/10 p-3 w-16 h-16 mx-auto mb-2 flex items-center justify-center">
-          <Icon className="w-8 h-8 text-primary" />
-        </div>
-        <h3 className="text-xl font-bold"><Translate text={title} /></h3>
-        <p className="text-muted-foreground">
-          <Translate text={description} />
-        </p>
-      </CardContent>
-    </Card>
-  );
-};
+const featuresData = [
+  {
+    icon: Calendar,
+    title: 'Easy Booking',
+    description: 'Book appointments with your favorite salon with just a few clicks'
+  },
+  {
+    icon: Scissors,
+    title: 'Expert Stylists',
+    description: 'Connect with top-rated stylists in your area'
+  },
+  {
+    icon: Bell,
+    title: 'Appointment Reminders',
+    description: 'Never miss an appointment with timely notifications'
+  },
+  {
+    icon: Star,
+    title: 'Reviews & Ratings',
+    description: 'Make informed decisions with authentic customer reviews'
+  },
+  {
+    icon: MapPin,
+    title: 'Find Nearby Salons',
+    description: 'Discover the best salons near you with location-based search'
+  }
+];
 
-const Welcome: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  const { language, setLanguage, translateApiKey } = useTranslation();
-  
-  // Animation effect when component mounts
+const Welcome = () => {
+  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+  const [features, setFeatures] = useState([]);
+  const [recentAppointments, setRecentAppointments] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
   useEffect(() => {
-    const features = document.querySelectorAll('.feature-card');
-    features.forEach((feature, index) => {
-      setTimeout(() => {
-        feature.classList.add('animate-fade-in');
-      }, 100 * index);
-    });
-  }, []);
-  
-  const handleLanguageChange = (value: string) => {
-    setLanguage(value as SupportedLanguage);
-    
-    // Show toast message to confirm language change
-    const langName = SUPPORTED_LANGUAGES[value as SupportedLanguage]?.name || value;
-    toast.success(`Language changed to ${langName}`);
-    
-    // Show warning if API key is missing
-    if (value !== 'english' && !translateApiKey) {
-      toast.warning('No translation API key set. Please add one in Settings.', {
-        action: {
-          label: 'Settings',
-          onClick: () => window.location.href = '/settings',
-        },
-      });
+    const fetchActiveFeatures = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('features')
+          .select('*')
+          .eq('status', 'active')
+          .limit(5);
+
+        if (error) throw error;
+        if (data) setFeatures(data);
+      } catch (error) {
+        console.error('Error fetching features:', error);
+      }
+    };
+
+    const fetchRecentAppointments = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            id, date, start_time, status,
+            salons(name, logo_url),
+            services(name)
+          `)
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .limit(3);
+
+        if (error) throw error;
+        if (data) setRecentAppointments(data);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchActiveFeatures();
+    fetchRecentAppointments();
+  }, [user?.id]);
+
+  // Animation variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
     }
   };
-  
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+        damping: 10
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-[100dvh]">
-      <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b sticky top-0 backdrop-blur-sm bg-background/80 z-10">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <Select value={language} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(SUPPORTED_LANGUAGES).map(([key, lang]) => (
-                <SelectItem key={key} value={key}>{lang.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
-          {isAuthenticated ? (
-            <Button size="sm" asChild>
-              <Link to="/profile"><Translate text="My Profile" /></Link>
-            </Button>
+    <Layout>
+      <div className="container mx-auto px-4 py-6">
+        {/* Hero Section */}
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-4xl font-bold mb-2">Welcome to HairHub</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Your one-stop platform for all your salon booking needs
+          </p>
+          
+          {user ? (
+            <div className="mt-8 space-y-4">
+              <h2 className="text-2xl font-semibold">
+                Welcome back, {user.name || 'there'}!
+              </h2>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button size="lg" onClick={() => navigate('/explore')}>
+                  Find Salons
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/appointments')}>
+                  View Appointments
+                </Button>
+              </div>
+            </div>
           ) : (
-            <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
-              <Link to="/sign-in"><Translate text="Sign In" /></Link>
-            </Button>
+            <div className="mt-8 space-y-4">
+              <h2 className="text-2xl font-semibold">
+                Ready to get started?
+              </h2>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button size="lg" onClick={() => navigate('/sign-up')}>
+                  Sign Up
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/sign-in')}>
+                  Sign In
+                </Button>
+              </div>
+            </div>
           )}
-        </div>
-      </header>
-      
-      <main className="flex-1">
-        <section className="w-full pt-12 md:pt-16 lg:pt-20">
-          <div className="container px-4 md:px-6 space-y-10 xl:space-y-16">
-            <div className="grid max-w-[1300px] mx-auto gap-4 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16">
-              <div className="flex flex-col justify-center space-y-4 animate-fade-in">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl bg-gradient-to-r from-primary to-primary/70 text-transparent bg-clip-text">
-                    <Translate text="Find Your Perfect Salon Experience" />
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    <Translate text="Discover, book, and enjoy top-rated salons. Your journey to the perfect style starts here." />
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button size="lg" asChild className="bg-primary hover:bg-primary/90 group">
-                    <Link to="/explore">
-                      <Translate text="Explore Salons" />
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                  {!isAuthenticated && (
-                    <Button size="lg" variant="outline" asChild className="border-primary/30 hover:bg-primary/5">
-                      <Link to="/sign-up"><Translate text="Create Account" /></Link>
-                    </Button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
-                  <Link to="/env-test" className="hover:underline flex items-center text-muted-foreground hover:text-primary transition-colors">
-                    <RotateCw className="mr-1 h-3 w-3" />
-                    <Translate text="Test Environment" />
-                  </Link>
-                </div>
-              </div>
-              <div className="flex items-center justify-center animate-fade-in" style={{ animationDelay: '200ms' }}>
-                <div className="relative w-full aspect-video overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
-                  <img
-                    alt="Salon showcase"
-                    className="object-cover w-full transition-transform duration-700 hover:scale-105"
-                    src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=2036&auto=format&fit=crop"
-                    style={{
-                      aspectRatio: "600/400",
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-8 lg:space-y-10">
-              <div className="text-center space-y-2 animate-fade-in" style={{ animationDelay: '300ms' }}>
-                <h2 className="text-2xl font-bold sm:text-3xl relative inline-block">
-                  <Translate text="How It Works" />
-                  <span className="absolute -bottom-2 left-1/4 right-1/4 h-1 bg-primary/30 rounded-full"></span>
-                </h2>
-                <p className="max-w-[700px] mx-auto text-muted-foreground">
-                  <Translate text="Our platform makes it easy to discover and book salon services in just a few steps" />
-                </p>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="feature-card opacity-0">
-                  <Feature 
-                    icon={Search} 
-                    title="Discover" 
-                    description="Browse through our curated list of top-rated salons in your area"
-                    delay={100}
-                  />
-                </div>
-                <div className="feature-card opacity-0">
-                  <Feature 
-                    icon={Calendar} 
-                    title="Book" 
-                    description="Select your preferred services and schedule an appointment"
-                    delay={200}
-                  />
-                </div>
-                <div className="feature-card opacity-0 sm:col-span-2 lg:col-span-1">
-                  <Feature 
-                    icon={Scissors} 
-                    title="Enjoy" 
-                    description="Experience quality service and share your feedback"
-                    delay={300}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-12 bg-primary/5 py-10 px-6 rounded-xl text-center animate-fade-in opacity-0" style={{ animationDelay: '400ms' }}>
-              <Star className="h-10 w-10 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-3"><Translate text="Join Our Community" /></h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-                <Translate text="Create an account to save your favorite salons, receive special offers, and manage your bookings easily." />
-              </p>
-              {!isAuthenticated && (
-                <Button size="lg" asChild className="bg-primary hover:bg-primary/90">
-                  <Link to="/sign-up"><Translate text="Get Started" /></Link>
-                </Button>
-              )}
-              {isAuthenticated && (
-                <Button size="lg" asChild>
-                  <Link to="/profile"><Translate text="View Profile" /></Link>
-                </Button>
-              )}
-            </div>
+        </motion.div>
+
+        {/* Feature Highlights */}
+        <motion.div
+          className="mb-16"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <h2 className="text-2xl font-bold mb-6 text-center">Why Choose Us</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuresData.map((feature, index) => (
+              <motion.div key={index} variants={itemVariants}>
+                <Card className="h-full hover:shadow-md transition-shadow duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-start">
+                      <div className="mr-4 bg-primary/10 p-3 rounded-full">
+                        <feature.icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                        <p className="text-muted-foreground">{feature.description}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
-        </section>
-      </main>
-      
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">
-          <Translate text="© 2023 Salon Finder. All rights reserved." />
-        </p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-xs hover:underline underline-offset-4" to="#">
-            <Translate text="Terms of Service" />
-          </Link>
-          <Link className="text-xs hover:underline underline-offset-4" to="#">
-            <Translate text="Privacy" />
-          </Link>
-          <Link className="text-xs hover:underline underline-offset-4" to="/settings">
-            <Settings className="h-3 w-3 inline mr-1" />
-            <Translate text="Settings" />
-          </Link>
-        </nav>
-      </footer>
-    </div>
+        </motion.div>
+
+        {/* Recent Appointments for logged in users */}
+        {user && (
+          <motion.div
+            className="mb-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-6 flex items-center">
+              Recent Appointments
+              <Button 
+                variant="ghost" 
+                className="ml-auto text-sm" 
+                size="sm"
+                onClick={() => navigate('/appointments')}
+              >
+                View All <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </h2>
+            
+            {isLoadingData ? (
+              <div className="grid grid-cols-1 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-24 animate-pulse bg-muted"></Card>
+                ))}
+              </div>
+            ) : recentAppointments.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {recentAppointments.map((appointment) => (
+                  <Card key={appointment.id} className="hover:shadow-md transition-shadow duration-300">
+                    <CardContent className="p-4">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+                          {appointment.salons?.logo_url ? (
+                            <img 
+                              src={appointment.salons.logo_url} 
+                              alt={appointment.salons.name} 
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <Scissors className="h-6 w-6 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">{appointment.salons?.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {appointment.services?.name} • {new Date(appointment.date).toLocaleDateString()} • {appointment.start_time}
+                          </div>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-xs ${
+                          appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                          appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="p-6 text-center">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="font-medium text-lg mb-2">No appointments yet</h3>
+                  <p className="text-muted-foreground mb-4">Book your first appointment to get started</p>
+                  <Button onClick={() => navigate('/explore')}>Find Salons</Button>
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
+        )}
+
+        {/* Active Platform Features (from database) */}
+        {features.length > 0 && (
+          <motion.div
+            className="mb-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <h2 className="text-2xl font-bold mb-6">Platform Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {features.map((feature) => (
+                <Card key={feature.id} className={`hover:shadow-md transition-shadow duration-300 ${feature.is_premium ? 'border-amber-300' : ''}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start">
+                      {feature.is_premium && (
+                        <div className="absolute -top-1 -right-1">
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                            Premium
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">{feature.name}</h3>
+                        <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Call to Action */}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold mb-4">Ready to Transform Your Beauty Experience?</h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Join thousands of satisfied customers who have simplified their salon booking experience with HairHub.
+          </p>
+          <Button size="lg" onClick={() => navigate('/explore')}>
+            Get Started Today
+          </Button>
+        </motion.div>
+
+        <Separator className="my-8" />
+
+        {/* Footer */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>&copy; {new Date().getFullYear()} HairHub. All rights reserved.</p>
+          <p className="mt-1">Made with ❤️ for beautiful hair days</p>
+        </div>
+      </div>
+    </Layout>
   );
 };
 

@@ -76,6 +76,69 @@ export type Database = {
           },
         ]
       }
+      feature_suggestions: {
+        Row: {
+          description: string
+          id: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          description: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          description?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      features: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_premium: boolean
+          name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_premium?: boolean
+          name: string
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_premium?: boolean
+          name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           content: string
@@ -342,6 +405,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          data_sharing: boolean
+          id: string
+          notifications_enabled: boolean
+          preferred_language: string | null
+          translate_api_key: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_sharing?: boolean
+          id?: string
+          notifications_enabled?: boolean
+          preferred_language?: string | null
+          translate_api_key?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_sharing?: boolean
+          id?: string
+          notifications_enabled?: boolean
+          preferred_language?: string | null
+          translate_api_key?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
