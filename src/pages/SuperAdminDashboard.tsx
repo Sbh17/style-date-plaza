@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, type Profile, type Salon, type News } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Shield, User, Scissors, RefreshCw, Check, X, Megaphone } from 'lucide-react';
+import { Shield, User, Scissors, RefreshCw, Check, X, Megaphone, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import FeatureManagement from '@/components/admin/FeatureManagement';
 
 const MOCK_NEWS: (News & { salon_name: string })[] = [
   {
@@ -205,7 +206,7 @@ const SuperAdminDashboard = () => {
           </div>
         ) : (
           <Tabs defaultValue="users" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="users" className="gap-2">
                 <User className="h-4 w-4" />
                 Users
@@ -217,6 +218,10 @@ const SuperAdminDashboard = () => {
               <TabsTrigger value="promotions" className="gap-2">
                 <Megaphone className="h-4 w-4" />
                 Promotions
+              </TabsTrigger>
+              <TabsTrigger value="features" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Features
               </TabsTrigger>
             </TabsList>
             
@@ -403,6 +408,10 @@ const SuperAdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="features" className="space-y-4 pt-4">
+              <FeatureManagement />
             </TabsContent>
           </Tabs>
         )}

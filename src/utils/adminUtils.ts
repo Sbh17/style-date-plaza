@@ -278,3 +278,55 @@ export const rollbackWebsiteToDate = async (date: Date): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Track feature management actions for rollback
+ * @param type The action type
+ * @param featureId The feature ID
+ * @param previousData The previous feature data
+ * @param newData The new feature data (for create/update)
+ * @param description Human-readable description of the action
+ * @returns The action ID
+ */
+export const trackFeatureAction = (
+  type: 'create' | 'update' | 'delete',
+  featureId: string,
+  previousData: any,
+  newData: any = null,
+  description: string
+): string => {
+  return trackAction({
+    type,
+    table: 'features',
+    recordId: featureId,
+    previousData,
+    newData,
+    description
+  });
+};
+
+/**
+ * Track feature suggestion actions for rollback
+ * @param type The action type
+ * @param suggestionId The suggestion ID
+ * @param previousData The previous suggestion data
+ * @param newData The new suggestion data (for create/update)
+ * @param description Human-readable description of the action
+ * @returns The action ID
+ */
+export const trackSuggestionAction = (
+  type: 'create' | 'update' | 'delete',
+  suggestionId: string,
+  previousData: any,
+  newData: any = null,
+  description: string
+): string => {
+  return trackAction({
+    type,
+    table: 'feature_suggestions',
+    recordId: suggestionId,
+    previousData,
+    newData,
+    description
+  });
+};
