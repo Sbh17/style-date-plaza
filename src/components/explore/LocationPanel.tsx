@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface LocationPanelProps {
   onLocationChange?: (lat: number, lng: number) => void;
@@ -50,23 +51,35 @@ const LocationPanel: React.FC<LocationPanelProps> = ({ onLocationChange }) => {
           </p>
         </div>
       </div>
-      <Button 
-        size="sm" 
-        variant={position ? "outline" : "default"}
-        onClick={handleGetLocation}
-        disabled={loading}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Detecting...
-          </>
-        ) : position ? (
-          'Change'
-        ) : (
-          'Detect'
-        )}
-      </Button>
+      <div className="flex gap-2">
+        <Link to="/super-admin-setup">
+          <Button 
+            size="sm" 
+            variant="outline"
+            className="flex items-center"
+          >
+            <Shield className="h-4 w-4 mr-1" />
+            Setup Admin
+          </Button>
+        </Link>
+        <Button 
+          size="sm" 
+          variant={position ? "outline" : "default"}
+          onClick={handleGetLocation}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Detecting...
+            </>
+          ) : position ? (
+            'Change'
+          ) : (
+            'Detect'
+          )}
+        </Button>
+      </div>
     </div>
   );
 };
