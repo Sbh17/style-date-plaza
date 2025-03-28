@@ -16,6 +16,8 @@ import NotFound from "./pages/NotFound";
 import EnvTest from "./pages/EnvTest";
 import Welcome from "./pages/Welcome";
 import SuperAdminSetup from "./pages/SuperAdminSetup";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 
@@ -39,6 +41,8 @@ const App = () => (
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/env-test" element={<EnvTest />} />
                 <Route path="/setup-superadmin" element={<SuperAdminSetup />} />
+                <Route path="/super-admin" element={<SuperAdminDashboard />} />
+                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
                 <Route path="*" element={<NotFound />} />
