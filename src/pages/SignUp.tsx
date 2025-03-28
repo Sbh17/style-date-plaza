@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { toast } from 'sonner';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { sendOTPVerification, verifyOTP, isSupabaseConfigured } from '@/lib/authUtils';
 import { setupSuperAdmin } from '@/utils/adminUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const signUpSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -22,7 +22,6 @@ const signUpSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
-// Create a separate schema for OTP validation
 const otpSchema = z.object({
   otp: z.string().length(6, { message: "Please enter the complete 6-digit code" })
 });
@@ -38,7 +37,6 @@ const SignUp: React.FC = () => {
   const [resending, setResending] = useState(false);
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   
-  // Form for registration details
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -48,7 +46,6 @@ const SignUp: React.FC = () => {
     },
   });
 
-  // Form for OTP verification
   const otpForm = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
     defaultValues: {
@@ -58,17 +55,22 @@ const SignUp: React.FC = () => {
 
   const onSubmit = async (data: SignUpFormValues) => {
     try {
-      // Store email for OTP verification
       setEmail(data.email);
       
-      // Use our authUtils function instead of direct Supabase call
+      const { data: userExists, error: checkError } = await supabase.auth.admin
+        ?.getUserByEmail(data.email)
+        .catch(() => ({ data: null, error: null }));
+      
+      if (userExists) {
+        toast.error("This email is already registered. Please sign in instead.");
+        return;
+      }
+      
       const success = await sendOTPVerification(data.email);
       
       if (success) {
-        // Move to verification step
         setStep('verification');
         
-        // If in development mode with no Supabase, show a more helpful message
         if (!isSupabaseConfigured()) {
           toast.info("Development mode: Enter any 6-digit code to continue");
         } else {
@@ -85,11 +87,9 @@ const SignUp: React.FC = () => {
     try {
       setVerifying(true);
       
-      // Use our authUtils function
       const success = await verifyOTP(email, values.otp);
       
       if (success) {
-        // Now complete the sign up with the form data
         const formData = form.getValues();
         await signUp(formData.email, formData.password, formData.name);
         
@@ -108,11 +108,9 @@ const SignUp: React.FC = () => {
     try {
       setResending(true);
       
-      // Use our authUtils function
       const success = await sendOTPVerification(email);
       
       if (success) {
-        // If in development mode with no Supabase, show a more helpful message
         if (!isSupabaseConfigured()) {
           toast.info("Development mode: Enter any 6-digit code to continue");
         } else {
@@ -129,7 +127,6 @@ const SignUp: React.FC = () => {
   const createSuperAdmin = async () => {
     setCreatingAdmin(true);
     try {
-      // Create a superadmin with predefined credentials
       const email = "superadmin@example.com";
       const password = "Admin123!";
       const name = "Super Admin";

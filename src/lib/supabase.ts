@@ -1,24 +1,10 @@
-
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize the Supabase client with fallback values for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xlaqlmkkualtcnpggrtx.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsYXFsbWtrdWFsdGNucGdncnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMzk0NTAsImV4cCI6MjA1NzkxNTQ1MH0.p_v6JJixHv_GAfGpYhV7TvHuXVdPHVhsqVkuoaBc6IU';
+import { supabase } from '@/integrations/supabase/client';
 
 // For development only - check for environment variables
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.warn('Missing Supabase environment variables. Using fallback values for development only.');
   console.info('If this is a production environment, please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
-
-// Create the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false // Explicitly disable URL detection to prevent issues with localhost redirects
-  },
-});
 
 // Test the connection and log the result
 supabase.auth.onAuthStateChange((event, session) => {

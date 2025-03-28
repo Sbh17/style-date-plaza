@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
@@ -19,11 +19,13 @@ export const sendOTPVerification = async (email: string): Promise<boolean> => {
     
     // Send OTP without using email redirects - the code will be shown in the email
     console.log('Sending OTP to:', email);
+    
+    // Use signInWithOtp with explicit configurations to ensure consistent behavior
     const { error, data } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: true, // Allow user creation
-        // Don't use redirectTo to avoid the localhost issue - users will manually enter the code
+        shouldCreateUser: false, // We'll create the user after verification
+        captchaToken: undefined // No captcha for this flow
       }
     });
     
@@ -78,41 +80,7 @@ export const verifyOTP = async (email: string, otp: string): Promise<boolean> =>
     
     if (error) throw error;
     
-    // If verification is successful, ensure user has a profile
-    if (data?.user) {
-      console.log('User verified:', data.user);
-      
-      // Check if profile exists
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', data.user.id)
-        .single();
-      
-      if (profileError && !profileError.message.includes('No rows found')) {
-        console.error('Error checking profile:', profileError);
-      }
-      
-      // If no profile exists, create one
-      if (!existingProfile) {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: data.user.id,
-            name: email.split('@')[0], // Default name from email
-            email: email,
-            role: 'user' // Default role
-          });
-        
-        if (insertError) {
-          console.error('Failed to create profile:', insertError);
-          // Continue anyway as the auth was successful
-        } else {
-          console.log('Created new profile for user');
-        }
-      }
-    }
-    
+    console.log('Verification successful, user data:', data?.user);
     return true;
   } catch (error: any) {
     console.error('OTP verification failed:', error);
