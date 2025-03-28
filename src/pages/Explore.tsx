@@ -1,15 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import Layout from '@/components/Layout';
-import SalonCard from '@/components/SalonCard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useSalons, seedSalons, type SimplifiedSalon } from '@/hooks/useSalons';
 import { toast } from 'sonner';
 
-// Mock data for immediate display
+import SearchBar from '@/components/explore/SearchBar';
+import FilterPanel from '@/components/explore/FilterPanel';
+import LocationPanel from '@/components/explore/LocationPanel';
+import SalonList from '@/components/explore/SalonList';
+
 const MOCK_SALONS = [
   {
     id: "1",
@@ -78,16 +79,13 @@ const Explore: React.FC = () => {
   
   const { data: salons = [], isLoading, error, refetch } = useSalons();
   
-  // Initialize data if needed and switch from mock to real data when available
   useEffect(() => {
     const initializeData = async () => {
-      // If we have real data from Supabase, use it
       if (salons.length > 0) {
         setDisplaySalons(salons);
         return;
       }
       
-      // If no data and not already loading/seeding, try to seed the database
       if (salons.length === 0 && !isLoading && !error && !isSeeding) {
         setIsSeeding(true);
         const seeded = await seedSalons();
@@ -154,6 +152,11 @@ const Explore: React.FC = () => {
     setSelectedFilters([]);
   };
   
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedFilters([]);
+  };
+  
   const manualSeedData = async () => {
     setIsSeeding(true);
     const seeded = await seedSalons();
@@ -178,16 +181,10 @@ const Explore: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Input
-              type="search"
-              placeholder="Search salons..."
-              className="pl-10 pr-4 h-11 rounded-xl bg-secondary/50 border-secondary"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          </div>
+          <SearchBar 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery} 
+          />
           <Button
             variant="outline"
             className={cn(
@@ -201,148 +198,29 @@ const Explore: React.FC = () => {
         </div>
         
         {showFilters && (
-          <div className="glass rounded-xl p-4 space-y-4 animate-slide-down">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Sort by</h3>
-                <Button variant="ghost" className="h-7 px-2 text-xs" onClick={clearFilters}>
-                  Clear all
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {SORT_OPTIONS.map(option => (
-                  <Button
-                    key={option.value}
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "rounded-full px-3 py-1 h-8 text-xs",
-                      sortBy === option.value 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-secondary/60"
-                    )}
-                    onClick={() => setSortBy(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Services</h3>
-              <div className="flex flex-wrap gap-2">
-                {FILTER_CATEGORIES.map(category => (
-                  <Button
-                    key={category.value}
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "rounded-full px-3 py-1 h-8 text-xs",
-                      selectedFilters.includes(category.value) 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-secondary/60"
-                    )}
-                    onClick={() => toggleFilter(category.value)}
-                  >
-                    {category.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="pt-2">
-              <Button className="w-full">Apply Filters</Button>
-            </div>
-          </div>
+          <FilterPanel
+            sortOptions={SORT_OPTIONS}
+            filterCategories={FILTER_CATEGORIES}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            selectedFilters={selectedFilters}
+            toggleFilter={toggleFilter}
+            clearFilters={clearFilters}
+          />
         )}
         
-        <div className="glass rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <MapPin className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Current Location</p>
-              <p className="text-xs text-muted-foreground">Within 5 miles</p>
-            </div>
-          </div>
-          <Button size="sm" variant="default">
-            Change
-          </Button>
-        </div>
+        <LocationPanel />
         
         <div className="space-y-4">
-          {error && (
-            <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
-              <p>Error loading salons: {error instanceof Error ? error.message : 'Unknown error'}</p>
-              <div className="flex gap-2 mt-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.reload()}
-                >
-                  Try Again
-                </Button>
-                <Button 
-                  variant="default" 
-                  onClick={manualSeedData}
-                  disabled={isSeeding}
-                >
-                  {isSeeding ? "Seeding..." : "Seed Database"}
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {isLoading || isSeeding ? (
-            Array(6).fill(0).map((_, idx) => (
-              <div key={idx} className="rounded-xl overflow-hidden animate-pulse">
-                <div className="aspect-[5/3] bg-muted"></div>
-                <div className="p-3 space-y-2">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </div>
-              </div>
-            ))
-          ) : (
-            filteredSalons.length > 0 ? (
-              filteredSalons.map((salon, index) => (
-                <SalonCard
-                  key={salon.id}
-                  id={salon.id}
-                  name={salon.name}
-                  imageUrl={salon.imageUrl}
-                  rating={salon.rating}
-                  ratingCount={salon.ratingCount}
-                  location={salon.location}
-                  distance={salon.distance}
-                  specialties={salon.specialties}
-                  className={`animation-delay-${index % 3}00`}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No salons found matching your criteria</p>
-                {(searchQuery || selectedFilters.length > 0) ? (
-                  <Button variant="outline" className="mt-2" onClick={() => {
-                    setSearchQuery("");
-                    setSelectedFilters([]);
-                  }}>
-                    Clear filters
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="default" 
-                    className="mt-2" 
-                    onClick={manualSeedData}
-                    disabled={isSeeding}
-                  >
-                    {isSeeding ? "Seeding Database..." : "Seed Database with Sample Data"}
-                  </Button>
-                )}
-              </div>
-            )
-          )}
+          <SalonList
+            salons={filteredSalons}
+            isLoading={isLoading}
+            isSeeding={isSeeding}
+            error={error}
+            manualSeedData={manualSeedData}
+            resetFilters={resetFilters}
+            hasActiveFilters={searchQuery.length > 0 || selectedFilters.length > 0}
+          />
         </div>
       </div>
     </Layout>
