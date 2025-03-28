@@ -158,7 +158,7 @@ const Profile: React.FC = () => {
     <Layout>
       <div className="space-y-6 pb-24">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold antialiased">My Profile</h1>
+          <h1 className="text-xl font-semibold antialiased">My BeautySpot Profile</h1>
           <p className="text-muted-foreground text-sm">
             Manage your account preferences and view your activity
           </p>

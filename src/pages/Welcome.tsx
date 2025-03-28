@@ -123,9 +123,9 @@ const Welcome = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-4xl font-bold mb-2">Welcome to HairHub</h1>
+          <h1 className="text-4xl font-bold mb-2">Welcome to BeautySpot</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Your one-stop platform for all your salon booking needs
+            Your one-stop platform for all your beauty salon booking needs
           </p>
           
           {user ? (
@@ -305,7 +305,7 @@ const Welcome = () => {
         >
           <h2 className="text-2xl font-bold mb-4">Ready to Transform Your Beauty Experience?</h2>
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Join thousands of satisfied customers who have simplified their salon booking experience with HairHub.
+            Join thousands of satisfied customers who have simplified their salon booking experience with BeautySpot.
           </p>
           <Button size="lg" onClick={() => navigate('/explore')}>
             Get Started Today
@@ -316,8 +316,8 @@ const Welcome = () => {
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} HairHub. All rights reserved.</p>
-          <p className="mt-1">Made with ❤️ for beautiful hair days</p>
+          <p>&copy; {new Date().getFullYear()} BeautySpot. All rights reserved.</p>
+          <p className="mt-1">Made with ❤️ for beautiful days</p>
         </div>
       </div>
     </Layout>
