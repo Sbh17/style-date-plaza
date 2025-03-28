@@ -4,6 +4,7 @@ import { MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LocationPanelProps {
   onLocationChange?: (lat: number, lng: number) => void;
@@ -12,9 +13,14 @@ interface LocationPanelProps {
 const LocationPanel: React.FC<LocationPanelProps> = ({ onLocationChange }) => {
   const [distance, setDistance] = useState<number>(5); // 5 miles by default
   const { position, loading, error, getPosition } = useGeolocation({ autoRequest: false });
+  const { isAuthenticated, isSuperAdmin } = useAuth();
 
   const handleGetLocation = async () => {
     try {
+      if (!isAuthenticated) {
+        toast.info('Sign in to enable personalized location features');
+      }
+      
       await getPosition();
     } catch (error) {
       toast.error('Failed to get your location. Please check your browser permissions.');

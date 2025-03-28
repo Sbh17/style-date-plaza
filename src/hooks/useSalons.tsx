@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSalons, seedSalonsData } from '@/api/salonApi';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type SimplifiedSalon = {
   id: string;
@@ -43,6 +44,7 @@ interface UseSalonsOptions {
 
 export const useSalons = (options?: UseSalonsOptions) => {
   const { latitude, longitude, maxDistance = 50 } = options || {};
+  const { isSuperAdmin, isAuthenticated } = useAuth();
   
   return useQuery({
     queryKey: ['salons', { latitude, longitude, maxDistance }],
@@ -98,6 +100,20 @@ export const useSalons = (options?: UseSalonsOptions) => {
 export const seedSalons = async (): Promise<boolean> => {
   try {
     toast.loading('Seeding salon data...', { id: 'seeding-toast' });
+    
+    // Check if the user is a superadmin before attempting to seed
+    const { isAuthenticated, isSuperAdmin } = useAuth();
+    
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to seed salon data', { id: 'seeding-toast' });
+      return false;
+    }
+    
+    if (!isSuperAdmin) {
+      toast.error('Only superadmins can seed salon data', { id: 'seeding-toast' });
+      return false;
+    }
+    
     const seeded = await seedSalonsData();
     
     if (seeded) {
