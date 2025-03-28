@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Filter } from 'lucide-react';
 import Layout from '@/components/Layout';
@@ -76,8 +77,15 @@ const Explore: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [displaySalons, setDisplaySalons] = useState<SimplifiedSalon[]>(MOCK_SALONS);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
-  const { data: salons = [], isLoading, error, refetch } = useSalons();
+  const { data: salons = [], isLoading, error, refetch } = useSalons(
+    userLocation ? {
+      latitude: userLocation.lat,
+      longitude: userLocation.lng,
+      maxDistance: 50 // 50 miles max distance
+    } : undefined
+  );
   
   useEffect(() => {
     const initializeData = async () => {
@@ -102,6 +110,11 @@ const Explore: React.FC = () => {
     
     initializeData();
   }, [salons, isLoading, error, refetch, isSeeding]);
+  
+  const handleLocationChange = (lat: number, lng: number) => {
+    setUserLocation({ lat, lng });
+    toast.success("Location updated! Finding salons near you...");
+  };
   
   const filteredSalons = React.useMemo(() => {
     let result = [...displaySalons];
@@ -209,7 +222,7 @@ const Explore: React.FC = () => {
           />
         )}
         
-        <LocationPanel />
+        <LocationPanel onLocationChange={handleLocationChange} />
         
         <div className="space-y-4">
           <SalonList

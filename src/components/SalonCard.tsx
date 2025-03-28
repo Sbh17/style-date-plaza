@@ -57,7 +57,7 @@ const SalonCard: React.FC<SalonCardProps> = ({
           <MapPin className="h-3.5 w-3.5 mr-1" />
           <p className="text-xs truncate">{location}</p>
           {distance && (
-            <span className="text-xs ml-2">• {distance}</span>
+            <span className="text-xs ml-2 font-medium text-primary">• {distance}</span>
           )}
         </div>
         
