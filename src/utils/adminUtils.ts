@@ -82,3 +82,136 @@ export const setupSuperAdmin = async (
     return false;
   }
 };
+
+/**
+ * Rollback history object to track recent changes
+ */
+export interface RollbackAction {
+  id: string;
+  timestamp: number;
+  type: 'create' | 'update' | 'delete';
+  table: string;
+  recordId: string;
+  previousData: any;
+  newData?: any;
+  description: string;
+}
+
+// In-memory store of recent actions that can be rolled back
+// In a production app, you might want to store this in a database
+const actionHistory: RollbackAction[] = [];
+const MAX_HISTORY_ITEMS = 50;
+
+/**
+ * Add an action to the rollback history
+ */
+export const trackAction = (action: Omit<RollbackAction, 'id' | 'timestamp'>) => {
+  // Add the action to the history
+  const newAction: RollbackAction = {
+    ...action,
+    id: crypto.randomUUID(),
+    timestamp: Date.now(),
+  };
+  
+  actionHistory.unshift(newAction);
+  
+  // Limit the history size
+  if (actionHistory.length > MAX_HISTORY_ITEMS) {
+    actionHistory.pop();
+  }
+  
+  console.log('Action tracked for rollback:', newAction);
+  return newAction.id;
+};
+
+/**
+ * Get the rollback history
+ */
+export const getRollbackHistory = () => {
+  return [...actionHistory];
+};
+
+/**
+ * Rollback a specific action
+ */
+export const rollbackAction = async (actionId: string): Promise<boolean> => {
+  try {
+    // Find the action in the history
+    const actionIndex = actionHistory.findIndex(a => a.id === actionId);
+    if (actionIndex === -1) {
+      toast.error('Action not found in history');
+      return false;
+    }
+    
+    const action = actionHistory[actionIndex];
+    console.log('Rolling back action:', action);
+    
+    // Check if we are running in development mode
+    if (!isSupabaseConfigured()) {
+      // Mock rollback in dev mode
+      toast.success(`Rolled back: ${action.description}`);
+      actionHistory.splice(actionIndex, 1);
+      return true;
+    }
+    
+    // Perform the rollback based on the action type
+    switch (action.type) {
+      case 'create':
+        // If it was a create action, delete the record
+        const { error: deleteError } = await supabase
+          .from(action.table)
+          .delete()
+          .eq('id', action.recordId);
+          
+        if (deleteError) {
+          throw deleteError;
+        }
+        break;
+        
+      case 'update':
+        // If it was an update action, restore the previous data
+        const { error: updateError } = await supabase
+          .from(action.table)
+          .update(action.previousData)
+          .eq('id', action.recordId);
+          
+        if (updateError) {
+          throw updateError;
+        }
+        break;
+        
+      case 'delete':
+        // If it was a delete action, recreate the record
+        const { error: insertError } = await supabase
+          .from(action.table)
+          .insert(action.previousData);
+          
+        if (insertError) {
+          throw insertError;
+        }
+        break;
+        
+      default:
+        throw new Error(`Unknown action type: ${action.type}`);
+    }
+    
+    // Remove the action from the history
+    actionHistory.splice(actionIndex, 1);
+    
+    toast.success(`Rolled back: ${action.description}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error rolling back action:', error);
+    toast.error(error.message || 'Failed to rollback action');
+    return false;
+  }
+};
+
+/**
+ * Clear all rollback history
+ */
+export const clearRollbackHistory = () => {
+  actionHistory.length = 0;
+  console.log('Rollback history cleared');
+};
+

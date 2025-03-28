@@ -52,7 +52,7 @@ const LocationPanel: React.FC<LocationPanelProps> = ({ onLocationChange }) => {
         </div>
       </div>
       <div className="flex gap-2">
-        <Link to="/super-admin-setup">
+        <Link to="/setup-superadmin">
           <Button 
             size="sm" 
             variant="outline"

@@ -41,6 +41,7 @@ const App = () => (
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/env-test" element={<EnvTest />} />
                 <Route path="/setup-superadmin" element={<SuperAdminSetup />} />
+                <Route path="/super-admin-setup" element={<SuperAdminSetup />} />
                 <Route path="/super-admin" element={<SuperAdminDashboard />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/sign-in" element={<SignIn />} />
