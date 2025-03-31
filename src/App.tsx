@@ -20,6 +20,7 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import Reviews from "./pages/Reviews";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
+                <Route path="/salon/:id/reviews" element={<Reviews />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TranslationProvider>

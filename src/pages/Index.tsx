@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Locate } from 'lucide-react';
 import SalonCard from '@/components/SalonCard';
@@ -10,6 +9,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import NewsPromoBanner from '@/components/NewsPromoBanner';
+import SalonReviewFeaturePromo from '@/components/SalonReviewFeaturePromo';
 
 // Mock data
 const MOCK_SALONS = [

@@ -125,3 +125,49 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
     return false;
   }
 };
+
+// Get average rating for a salon
+export const getSalonRating = async (salonId: string): Promise<{ rating: number, count: number } | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('salon_id', salonId);
+      
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      const total = data.reduce((sum, review) => sum + review.rating, 0);
+      const average = Number((total / data.length).toFixed(1));
+      return { rating: average, count: data.length };
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error(`Error fetching salon rating:`, error);
+    return null;
+  }
+};
+
+// Update salon rating in the salons table
+export const updateSalonRating = async (salonId: string): Promise<boolean> => {
+  try {
+    const ratingData = await getSalonRating(salonId);
+    
+    if (ratingData) {
+      const { error } = await supabase
+        .from('salons')
+        .update({ rating: ratingData.rating })
+        .eq('id', salonId);
+        
+      if (error) throw error;
+      return true;
+    }
+    
+    return false;
+  } catch (error: any) {
+    console.error(`Error updating salon rating:`, error);
+    toast.error(`Failed to update salon rating: ${error.message}`);
+    return false;
+  }
+};
