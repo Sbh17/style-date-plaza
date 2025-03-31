@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -55,19 +54,69 @@ export const setupSuperAdmin = async (email: string, password: string, name: str
   }
 };
 
-// RPC function for checking if table exists (reference only - this should be created in Supabase)
-/*
-create or replace function check_table_exists(table_name text)
-returns boolean
-language plpgsql
-security definer
-as $$
-begin
-  return exists (
-    select from information_schema.tables 
-    where table_schema = 'public'
-    and table_name = $1
-  );
-end;
-$$;
-*/
+// Define RollbackAction type for the history component
+export type RollbackAction = {
+  id: string;
+  timestamp: Date;
+  description: string;
+  type: 'create' | 'update' | 'delete';
+  table: string;
+  data: any;
+};
+
+// Mock functions for rollback functionality until we implement the real versions
+export const getRollbackHistory = (): RollbackAction[] => {
+  // For now, return empty array or mock data
+  return [];
+};
+
+export const rollbackAction = async (actionId: string): Promise<boolean> => {
+  // Mock implementation
+  console.log(`Rollback requested for action: ${actionId}`);
+  toast.success('Rollback operation would occur here');
+  return true;
+};
+
+export const clearRollbackHistory = (): void => {
+  // Mock implementation
+  console.log('Clear rollback history requested');
+  toast.success('History cleared');
+};
+
+export const rollbackWebsiteToDate = async (date: Date): Promise<boolean> => {
+  // Mock implementation
+  console.log(`Rollback to date requested: ${date.toISOString()}`);
+  toast.success(`Website would be rolled back to ${date.toLocaleString()}`);
+  return true;
+};
+
+// Other utility functions to query and manage data safely
+export const getTableData = async (tableName: 'profiles' | 'salons' | 'services' | 'stylists' | 'appointments' | 'reviews' | 'news' | 'features' | 'feature_suggestions' | 'user_settings') => {
+  try {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*');
+      
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error(`Error fetching data from ${tableName}:`, error);
+    toast.error(`Failed to fetch ${tableName}: ${error.message}`);
+    return null;
+  }
+};
+
+// Check if a database table exists
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('check_table_exists', {
+      table_name: tableName
+    });
+    
+    if (error) throw error;
+    return !!data;
+  } catch (error: any) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
+    return false;
+  }
+};

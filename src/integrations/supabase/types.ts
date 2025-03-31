@@ -188,28 +188,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          bio: string | null
           created_at: string | null
           email: string
           id: string
           name: string
+          occupation: string | null
+          password: string | null
+          phone: string | null
           profile_image: string | null
           role: string
           user_id: string
         }
         Insert: {
+          address?: string | null
+          bio?: string | null
           created_at?: string | null
           email: string
           id?: string
           name: string
+          occupation?: string | null
+          password?: string | null
+          phone?: string | null
           profile_image?: string | null
           role?: string
           user_id: string
         }
         Update: {
+          address?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string
           id?: string
           name?: string
+          occupation?: string | null
+          password?: string | null
+          phone?: string | null
           profile_image?: string | null
           role?: string
           user_id?: string
@@ -444,7 +459,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_table_exists: {
+        Args: {
+          table_name: string
+        }
+        Returns: boolean
+      }
+      update_profile_password: {
+        Args: {
+          user_id: string
+          new_password: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,4 +1,3 @@
-
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 // For development only - check for environment variables
@@ -20,20 +19,22 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 export const supabase = supabaseClient;
 
 // Define types for database schema
+export type UserRole = 'user' | 'admin' | 'superadmin';
+
 export type Profile = {
   id: string;
   user_id: string;
   name: string;
   email: string;
-  password?: string; // Added password field as optional
-  role: 'user' | 'admin' | 'superadmin';
+  password?: string;
+  role: UserRole;
   profile_image: string | null;
   created_at: string;
-  phone?: string;
-  address?: string;
-  occupation?: string;
-  bio?: string;
-}
+  phone?: string | null;
+  address?: string | null;
+  occupation?: string | null;
+  bio?: string | null;
+};
 
 export type Salon = {
   id: string;
