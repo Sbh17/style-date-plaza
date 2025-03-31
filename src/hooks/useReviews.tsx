@@ -15,7 +15,7 @@ export interface Review {
   profiles?: {
     name: string;
     profile_image: string | null;
-  };
+  } | null;
 }
 
 export const useReviews = (salonId: string) => {
@@ -33,7 +33,7 @@ export const useReviews = (salonId: string) => {
         .from('reviews')
         .select(`
           *,
-          profiles:user_id (
+          profiles:profiles!user_id(
             name,
             profile_image
           )
@@ -103,3 +103,4 @@ export const useReviews = (salonId: string) => {
     addReview
   };
 };
+

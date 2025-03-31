@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Check, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, X, AlertTriangle } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, addMinutes, isPast, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 
-// Mock appointments data
 const MOCK_APPOINTMENTS = [
   {
     id: "a1",
@@ -55,6 +54,14 @@ interface AppointmentCardProps {
 const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment, onCancel }) => {
   const isUpcoming = appointment.status === "upcoming";
   
+  const appointmentDateTime = new Date(appointment.date);
+  appointmentDateTime.setHours(
+    parseInt(appointment.time.split(':')[0]),
+    parseInt(appointment.time.split(':')[1].split(' ')[0])
+  );
+  
+  const isWithin30Minutes = isPast(addMinutes(new Date(), 30)) && !isPast(appointmentDateTime);
+  
   return (
     <div className={cn(
       "rounded-xl border border-border p-4 transition-all animate-scale-in",
@@ -91,15 +98,22 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment, onCancel
         </div>
         
         {isUpcoming ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="border-destructive/50 text-destructive hover:bg-destructive/10"
-            onClick={() => onCancel(appointment.id)}
-          >
-            <X className="h-3.5 w-3.5 mr-1.5" />
-            Cancel
-          </Button>
+          isWithin30Minutes ? (
+            <div className="flex items-center text-amber-500">
+              <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+              <span className="text-xs">Cannot cancel</span>
+            </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-destructive/50 text-destructive hover:bg-destructive/10"
+              onClick={() => onCancel(appointment.id)}
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              Cancel
+            </Button>
+          )
         ) : (
           <div className="flex items-center">
             <Check className="h-3.5 w-3.5 mr-1.5 text-green-500" />
@@ -115,7 +129,6 @@ const Appointments: React.FC = () => {
   const [appointments, setAppointments] = useState<typeof MOCK_APPOINTMENTS>([]);
   const [loading, setLoading] = useState(true);
   
-  // Simulate loading appointments
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppointments(MOCK_APPOINTMENTS);
@@ -128,13 +141,31 @@ const Appointments: React.FC = () => {
   const pastAppointments = appointments.filter(app => app.status === "past");
   
   const handleCancelAppointment = (id: string) => {
-    // In a real app, this would be an API call
+    const appointment = appointments.find(app => app.id === id);
+    
+    if (!appointment) {
+      toast.error("Appointment not found");
+      return;
+    }
+    
+    const appointmentDateTime = new Date(appointment.date);
+    appointmentDateTime.setHours(
+      parseInt(appointment.time.split(':')[0]),
+      parseInt(appointment.time.split(':')[1].split(' ')[0])
+    );
+    
+    if (isPast(addMinutes(new Date(), 30)) && !isPast(appointmentDateTime)) {
+      toast.error("Cannot cancel appointments less than 30 minutes before the scheduled time");
+      return;
+    }
+    
     console.log(`Cancelling appointment ${id}`);
     
-    // Update local state
     setAppointments(prev => 
       prev.filter(appointment => appointment.id !== id)
     );
+    
+    toast.success("Appointment cancelled successfully");
   };
 
   return (
