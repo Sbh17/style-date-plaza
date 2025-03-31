@@ -80,7 +80,7 @@ const UserProfileForm: React.FC = () => {
           console.log("Profile data fetched successfully:", data);
           setProfileExists(true);
           
-          // Update form with retrieved data
+          // Update form with retrieved data, using optional chaining to safely access potentially missing fields
           form.reset({
             name: data.name || user.name,
             email: data.email || user.email,

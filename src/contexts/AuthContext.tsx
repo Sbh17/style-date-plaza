@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -136,7 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               id: session.user.id,
               name: profile.name,
               email: profile.email,
-              role: profile.role,
+              role: profile.role as UserRole,
               profileImage: profile.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`
             });
           }

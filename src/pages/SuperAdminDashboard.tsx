@@ -86,12 +86,24 @@ const SuperAdminDashboard = () => {
         
         if (profilesError) throw profilesError;
         
+        if (profilesData) {
+          const typedProfiles = profilesData.map(profile => ({
+            ...profile,
+            role: profile.role as Profile['role']
+          }));
+          setUsers(typedProfiles);
+        }
+        
         const { data: salonsData, error: salonsError } = await supabase
           .from('salons')
           .select('*')
           .order('created_at', { ascending: false });
         
         if (salonsError) throw salonsError;
+        
+        if (salonsData) {
+          setSalons(salonsData);
+        }
 
         setTimeout(() => {
           setNews(MOCK_NEWS);

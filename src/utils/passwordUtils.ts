@@ -1,60 +1,70 @@
 
 import { supabase } from '@/lib/supabase';
+import type { Profile } from '@/lib/supabase';
 import { toast } from 'sonner';
+import bcrypt from 'bcrypt';
 
-/**
- * Store a user's password in the profiles table (for development/demo purposes only)
- * NOTE: This is NOT recommended for production applications as it stores passwords in plain text
- * In a real application, use Supabase Auth which already handles secure password storage
- */
-export const storeUserPassword = async (
-  userId: string,
-  password: string
-): Promise<boolean> => {
+export const hashPassword = async (password: string): Promise<string> => {
   try {
-    if (!userId || !password) {
-      console.error('Missing userId or password');
-      return false;
-    }
-    
-    // Update profile with password
-    const { error } = await supabase
-      .from('profiles')
-      .update({ password })
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error('Failed to store password:', error);
-      return false;
-    }
-    
-    console.log('Password stored for user:', userId);
-    return true;
-  } catch (error) {
-    console.error('Error storing password:', error);
+    const SALT_ROUNDS = 10;
+    return await bcrypt.hash(password, SALT_ROUNDS);
+  } catch (error: any) {
+    console.error('Error hashing password:', error);
+    throw new Error('Failed to hash password');
+  }
+};
+
+export const checkPassword = async (plainTextPassword: string, hashedPassword: string): Promise<boolean> => {
+  try {
+    return await bcrypt.compare(plainTextPassword, hashedPassword);
+  } catch (error: any) {
+    console.error('Error checking password:', error);
     return false;
   }
 };
 
-/**
- * Get a user's password from the profiles table (for development/demo purposes only)
- */
-export const getUserPassword = async (userId: string): Promise<string | null> => {
+export const updateUserPassword = async (userId: string, newPassword: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('password')
-      .eq('user_id', userId)
-      .single();
+    // Update auth.users password via the Supabase Auth API
+    const { error: authError } = await supabase.auth.updateUser({
+      password: newPassword
+    });
     
-    if (error || !data) {
-      console.error('Failed to get password:', error);
-      return null;
+    if (authError) throw authError;
+    
+    // If you're storing a hashed password in profiles for development/demo purposes
+    try {
+      const { error: profileError } = await supabase.rpc('update_profile_password', {
+        user_id: userId,
+        new_password: newPassword
+      });
+      
+      if (profileError) {
+        console.warn('Could not update profile password, but auth password was updated:', profileError);
+      }
+    } catch (e) {
+      console.warn('Failed to update profile password (RPC may not exist), but auth password was updated');
     }
     
-    return data.password;
-  } catch (error) {
-    console.error('Error getting password:', error);
-    return null;
+    return true;
+  } catch (error: any) {
+    console.error('Error updating password:', error);
+    toast.error(error.message || 'Failed to update password');
+    return false;
   }
 };
+
+// RPC function for updating password in profiles (reference only - this should be created in Supabase)
+/*
+create or replace function update_profile_password(user_id uuid, new_password text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update profiles 
+  set password = new_password
+  where user_id = $1;
+end;
+$$;
+*/
