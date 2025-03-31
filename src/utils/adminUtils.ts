@@ -90,8 +90,13 @@ export const rollbackWebsiteToDate = async (date: Date): Promise<boolean> => {
   return true;
 };
 
+// Type-safe table name for getTableData
+type TableName = 'profiles' | 'salons' | 'services' | 'stylists' | 
+                'appointments' | 'reviews' | 'news' | 'features' | 
+                'feature_suggestions' | 'user_settings';
+
 // Other utility functions to query and manage data safely
-export const getTableData = async (tableName: 'profiles' | 'salons' | 'services' | 'stylists' | 'appointments' | 'reviews' | 'news' | 'features' | 'feature_suggestions' | 'user_settings') => {
+export const getTableData = async (tableName: TableName) => {
   try {
     const { data, error } = await supabase
       .from(tableName)

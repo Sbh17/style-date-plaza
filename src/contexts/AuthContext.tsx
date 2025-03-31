@@ -1,7 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { UserRole } from '@/lib/supabase';
+import { UserRole, Profile } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Define User type with appropriate role types
 type User = {
@@ -17,13 +19,18 @@ interface AuthContextProps {
   user: User | null;
   session: any;
   loading: boolean;
+  isLoading: boolean; // Added for SignIn and SignUp
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>; // Added for SignUp
   isAuthenticated: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   fetchUserProfile: (userId: string) => Promise<any>;
+  goToAdmin: () => void; // Added for navigation
+  goToSuperAdmin: () => void; // Added for navigation
+  requireAuth: () => boolean; // Added for authentication check
 }
 
 // Create the AuthContext with a default value
@@ -31,19 +38,25 @@ const AuthContext = createContext<AuthContextProps>({
   user: null,
   session: null,
   loading: true,
+  isLoading: false,
   login: async () => {},
   logout: async () => {},
   register: async () => {},
+  signUp: async () => {},
   isAuthenticated: false,
   isAdmin: false,
   isSuperAdmin: false,
   fetchUserProfile: async () => null,
+  goToAdmin: () => {},
+  goToSuperAdmin: () => {},
+  requireAuth: () => false,
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadSession = async () => {
@@ -133,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw error;
       }
       setUser(null);
+      navigate('/welcome');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -167,18 +181,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Add navigation functions
+  const goToAdmin = () => {
+    navigate('/admin');
+  };
+
+  const goToSuperAdmin = () => {
+    navigate('/super-admin');
+  };
+
+  // Add requireAuth function
+  const requireAuth = (): boolean => {
+    if (!user && !loading) {
+      toast.error('You must be logged in to access this page');
+      navigate('/sign-in');
+      return false;
+    }
+    return true;
+  };
+
   // Value object to be provided by the context
   const value = {
     user,
     session,
     loading,
+    isLoading: loading, // Alias loading as isLoading for compatibility
     login: loginWithEmailAndPassword,
     logout,
     register: registerWithEmailAndPassword,
+    signUp: registerWithEmailAndPassword, // Alias register as signUp for compatibility
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === 'admin' || user?.role === 'superadmin',
     isSuperAdmin: user?.role === 'superadmin',
     fetchUserProfile,
+    goToAdmin,
+    goToSuperAdmin,
+    requireAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

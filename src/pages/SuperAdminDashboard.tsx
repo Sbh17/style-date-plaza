@@ -44,10 +44,10 @@ import {
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { RollbackHistory, WebsiteRollback } from '@/components/admin';
-import { UserRole } from '@/lib/supabase';
+import RollbackHistory from '@/components/admin/RollbackHistory';
+import WebsiteRollback from '@/components/admin/WebsiteRollback';
+import { UserRole, Profile } from '@/lib/supabase';
 
-// Define a schema for the user profile form
 const profileFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -61,15 +61,14 @@ const profileFormSchema = z.object({
 })
 
 const SuperAdminDashboard: React.FC = () => {
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isEditingUser, setIsEditingUser] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -89,7 +88,6 @@ const SuperAdminDashboard: React.FC = () => {
 
       if (error) throw error;
       
-      // Cast the data to ensure each profile has the correct UserRole type
       const typedProfiles = data.map(profile => ({
         ...profile,
         role: profile.role as UserRole
@@ -111,10 +109,9 @@ const SuperAdminDashboard: React.FC = () => {
   const handleCreateUser = async (values: z.infer<typeof profileFormSchema>) => {
     setIsCreatingUser(true);
     try {
-      // Create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
-        password: 'defaultpassword', // You might want to generate a random password
+        password: 'defaultpassword',
         options: {
           data: {
             name: values.name,
@@ -127,7 +124,6 @@ const SuperAdminDashboard: React.FC = () => {
       }
 
       if (authData.user) {
-        // Insert user data into profiles table
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -144,7 +140,7 @@ const SuperAdminDashboard: React.FC = () => {
         }
 
         toast.success(`User ${values.name} created successfully`);
-        fetchUsers(); // Refresh user list
+        fetchUsers();
         setCreateUserDialogOpen(false);
       }
     } catch (error: any) {
@@ -158,7 +154,6 @@ const SuperAdminDashboard: React.FC = () => {
   const handleEditUser = async (values: z.infer<typeof profileFormSchema>) => {
     setIsEditingUser(true);
     try {
-      // Update user data in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -173,7 +168,7 @@ const SuperAdminDashboard: React.FC = () => {
       }
 
       toast.success(`User ${values.name} updated successfully`);
-      fetchUsers(); // Refresh user list
+      fetchUsers();
       setEditUserDialogOpen(false);
     } catch (error: any) {
       console.error("Error updating user:", error);
@@ -186,7 +181,6 @@ const SuperAdminDashboard: React.FC = () => {
   const handleDeleteUser = async (profileId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        // Delete user from profiles table
         const { error: profileError } = await supabase
           .from('profiles')
           .delete()
@@ -197,7 +191,7 @@ const SuperAdminDashboard: React.FC = () => {
         }
 
         toast.success('User deleted successfully');
-        fetchUsers(); // Refresh user list
+        fetchUsers();
       } catch (error: any) {
         console.error("Error deleting user:", error);
         toast.error(`Failed to delete user: ${error.message}`);
@@ -359,7 +353,6 @@ const SuperAdminDashboard: React.FC = () => {
         <WebsiteRollback />
       </div>
 
-      {/* Edit User Dialog */}
       <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
