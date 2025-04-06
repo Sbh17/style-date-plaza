@@ -33,23 +33,26 @@ export const useReviews = (salonId: string) => {
         .from('reviews')
         .select(`
           *,
-          profiles:profiles!user_id(
-            name,
-            profile_image
-          )
+          profiles(name, profile_image)
         `)
         .eq('salon_id', salonId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setReviews(data || []);
-      setReviewCount(data?.length || 0);
+      // Transform data to match the Review interface
+      const formattedData = data?.map(review => ({
+        ...review,
+        profiles: review.profiles as { name: string; profile_image: string | null } | null
+      })) || [];
+
+      setReviews(formattedData);
+      setReviewCount(formattedData.length || 0);
       
       // Calculate average rating
-      if (data && data.length > 0) {
-        const total = data.reduce((sum, review) => sum + review.rating, 0);
-        setAverageRating(Number((total / data.length).toFixed(1)));
+      if (formattedData && formattedData.length > 0) {
+        const total = formattedData.reduce((sum, review) => sum + review.rating, 0);
+        setAverageRating(Number((total / formattedData.length).toFixed(1)));
       } else {
         setAverageRating(null);
       }
@@ -103,4 +106,3 @@ export const useReviews = (salonId: string) => {
     addReview
   };
 };
-

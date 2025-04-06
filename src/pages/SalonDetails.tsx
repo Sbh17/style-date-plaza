@@ -268,7 +268,7 @@ const SalonDetails: React.FC = () => {
           </TabsList>
           
           <TabsContent value="services" className="space-y-4 pt-4">
-            {salon.services.map((service) => (
+            {salon.services && salon.services.map((service) => (
               <div key={service.id} className="flex justify-between items-center p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">{service.name}</p>

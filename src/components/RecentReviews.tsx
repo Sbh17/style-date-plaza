@@ -6,18 +6,22 @@ import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 
+interface ReviewProfile {
+  name: string;
+}
+
+interface SalonInfo {
+  name: string;
+}
+
 interface Review {
   id: string;
   salon_id: string;
   rating: number;
   comment: string;
   created_at: string;
-  profiles: {
-    name: string;
-  };
-  salons: {
-    name: string;
-  };
+  profiles?: ReviewProfile | null;
+  salons?: SalonInfo | null;
 }
 
 const RecentReviews = () => {
@@ -36,19 +40,22 @@ const RecentReviews = () => {
             rating,
             comment,
             created_at,
-            profiles:user_id (
-              name
-            ),
-            salons:salon_id (
-              name
-            )
+            profiles(name),
+            salons(name)
           `)
           .order('created_at', { ascending: false })
           .limit(3);
 
         if (error) throw error;
         
-        setReviews(data || []);
+        // Transform data to match the Review interface
+        const formattedData = data?.map(review => ({
+          ...review,
+          profiles: review.profiles as ReviewProfile | null,
+          salons: review.salons as SalonInfo | null
+        })) || [];
+        
+        setReviews(formattedData);
       } catch (err) {
         console.error('Error fetching recent reviews:', err);
       } finally {

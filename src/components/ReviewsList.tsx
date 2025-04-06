@@ -4,16 +4,18 @@ import { Star, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 
+interface ReviewProfile {
+  name: string;
+  profile_image: string | null;
+}
+
 interface Review {
   id: string;
   user_id: string;
   rating: number;
   comment: string;
   created_at: string;
-  profiles?: {
-    name: string;
-    profile_image: string | null;
-  };
+  profiles?: ReviewProfile | null;
 }
 
 interface ReviewsListProps {
@@ -34,10 +36,7 @@ const ReviewsList = ({ salonId, limit = 5 }: ReviewsListProps) => {
           .from('reviews')
           .select(`
             *,
-            profiles:user_id (
-              name,
-              profile_image
-            )
+            profiles(name, profile_image)
           `)
           .eq('salon_id', salonId)
           .order('created_at', { ascending: false })
@@ -45,12 +44,18 @@ const ReviewsList = ({ salonId, limit = 5 }: ReviewsListProps) => {
 
         if (error) throw error;
 
-        setReviews(data || []);
+        // Transform data to match the Review interface
+        const formattedData = data?.map(review => ({
+          ...review,
+          profiles: review.profiles as ReviewProfile | null
+        })) || [];
+
+        setReviews(formattedData);
         
         // Calculate average rating
-        if (data && data.length > 0) {
-          const total = data.reduce((sum, review) => sum + review.rating, 0);
-          setAverageRating(Number((total / data.length).toFixed(1)));
+        if (formattedData && formattedData.length > 0) {
+          const total = formattedData.reduce((sum, review) => sum + review.rating, 0);
+          setAverageRating(Number((total / formattedData.length).toFixed(1)));
         }
       } catch (err: any) {
         console.error('Error fetching reviews:', err);
