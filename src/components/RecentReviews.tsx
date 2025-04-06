@@ -48,12 +48,26 @@ const RecentReviews = () => {
 
         if (error) throw error;
         
-        // Transform data to match the Review interface
-        const formattedData = data?.map(review => ({
-          ...review,
-          profiles: review.profiles as ReviewProfile | null,
-          salons: review.salons as SalonInfo | null
-        })) || [];
+        // Transform data to match the Review interface and handle potential profile/salon errors
+        const formattedData: Review[] = data?.map(review => {
+          // Check if profiles is an error object and provide a default value
+          const profileData = review.profiles && 
+            typeof review.profiles === 'object' && 
+            !('error' in review.profiles) ? 
+            review.profiles as ReviewProfile : null;
+          
+          // Check if salons is an error object and provide a default value
+          const salonData = review.salons && 
+            typeof review.salons === 'object' && 
+            !('error' in review.salons) ? 
+            review.salons as SalonInfo : null;
+          
+          return {
+            ...review,
+            profiles: profileData,
+            salons: salonData
+          };
+        }) || [];
         
         setReviews(formattedData);
       } catch (err) {
@@ -123,7 +137,7 @@ const RecentReviews = () => {
           
           <Link to={`/salon/${review.salon_id}`} className="block">
             <p className="text-xs text-muted-foreground mb-1">
-              <span className="font-medium">{review.salons?.name}</span> • {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+              <span className="font-medium">{review.salons?.name || 'Unknown Salon'}</span> • {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
             </p>
             <p className="text-sm line-clamp-2">{review.comment}</p>
           </Link>

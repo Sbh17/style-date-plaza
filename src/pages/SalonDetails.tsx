@@ -10,7 +10,6 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import SalonReviewsSection from '@/components/SalonReviewsSection';
 
-// Mock data for salon details
 const MOCK_SALON = {
   id: "1",
   name: "Elegance Beauty Salon",
@@ -73,22 +72,10 @@ const SalonDetails: React.FC = () => {
       if (!id) return;
       
       try {
-        // In a real app, fetch from API/database
-        // For now, use mock data with a delay to simulate loading
         setTimeout(() => {
           setSalon(MOCK_SALON);
           setLoading(false);
         }, 500);
-        
-        // Example of how to fetch from Supabase:
-        // const { data, error } = await supabase
-        //   .from('salons')
-        //   .select('*')
-        //   .eq('id', id)
-        //   .single();
-        // 
-        // if (error) throw error;
-        // setSalon(data);
         
       } catch (error: any) {
         console.error('Error fetching salon details:', error);
@@ -108,7 +95,6 @@ const SalonDetails: React.FC = () => {
       return;
     }
     
-    // Navigate to booking page or open booking modal
     toast.success('Booking functionality coming soon!');
   };
   
@@ -305,7 +291,7 @@ const SalonDetails: React.FC = () => {
                 {Object.entries(salon.hours).map(([day, hours]) => (
                   <div key={day} className="flex justify-between">
                     <span className="capitalize">{day}</span>
-                    <span>{hours}</span>
+                    <span>{hours as string}</span>
                   </div>
                 ))}
               </div>

@@ -44,11 +44,19 @@ const ReviewsList = ({ salonId, limit = 5 }: ReviewsListProps) => {
 
         if (error) throw error;
 
-        // Transform data to match the Review interface
-        const formattedData = data?.map(review => ({
-          ...review,
-          profiles: review.profiles as ReviewProfile | null
-        })) || [];
+        // Transform data to match the Review interface and handle potential profile errors
+        const formattedData: Review[] = data?.map(review => {
+          // Check if profiles is an error object and provide a default value
+          const profileData = review.profiles && 
+            typeof review.profiles === 'object' && 
+            !('error' in review.profiles) ? 
+            review.profiles as ReviewProfile : null;
+          
+          return {
+            ...review,
+            profiles: profileData
+          };
+        }) || [];
 
         setReviews(formattedData);
         
