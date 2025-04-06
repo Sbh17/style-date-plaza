@@ -1,9 +1,15 @@
+
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 // For development only - check for environment variables
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('Missing Supabase environment variables. Using fallback values for development only.');
-  console.info('If this is a production environment, please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+const isProduction = import.meta.env.MODE === 'production';
+
+if (!isProduction) {
+  console.info(`Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`);
+  
+  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    console.warn('Missing Supabase environment variables. Using fallback values for development only.');
+  }
 }
 
 // Test the connection and log the result

@@ -3,8 +3,22 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xlaqlmkkualtcnpggrtx.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsYXFsbWtrdWFsdGNucGdncnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMzk0NTAsImV4cCI6MjA1NzkxNTQ1MH0.p_v6JJixHv_GAfGpYhV7TvHuXVdPHVhsqVkuoaBc6IU";
+// Check which environment we're in
+const isProduction = import.meta.env.MODE === 'production';
+
+// Default URLs for development (same as the current ones)
+const DEV_SUPABASE_URL = "https://xlaqlmkkualtcnpggrtx.supabase.co";
+const DEV_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsYXFsbWtrdWFsdGNucGdncnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMzk0NTAsImV4cCI6MjA1NzkxNTQ1MH0.p_v6JJixHv_GAfGpYhV7TvHuXVdPHVhsqVkuoaBc6IU";
+
+// Production URLs from env variables (these need to be set in your hosting platform)
+const PROD_SUPABASE_URL = import.meta.env.VITE_PROD_SUPABASE_URL;
+const PROD_SUPABASE_ANON_KEY = import.meta.env.VITE_PROD_SUPABASE_ANON_KEY;
+
+// Select the appropriate URLs based on environment
+const SUPABASE_URL = isProduction && PROD_SUPABASE_URL ? PROD_SUPABASE_URL : DEV_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = isProduction && PROD_SUPABASE_ANON_KEY ? PROD_SUPABASE_ANON_KEY : DEV_SUPABASE_ANON_KEY;
+
+console.log(`Using Supabase environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

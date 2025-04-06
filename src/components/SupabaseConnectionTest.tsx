@@ -11,9 +11,11 @@ const SupabaseConnectionTest: React.FC = () => {
   const [envVars, setEnvVars] = useState<{
     url: string | null;
     keyLast4: string | null;
+    environment: string;
   }>({
     url: null,
-    keyLast4: null
+    keyLast4: null,
+    environment: import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'DEVELOPMENT'
   });
 
   useEffect(() => {
@@ -34,7 +36,8 @@ const SupabaseConnectionTest: React.FC = () => {
       
       setEnvVars({
         url: supabaseUrl,
-        keyLast4
+        keyLast4,
+        environment: import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'DEVELOPMENT'
       });
 
       // Test the connection with a simple query to profiles table
@@ -73,6 +76,7 @@ const SupabaseConnectionTest: React.FC = () => {
       <h2 className="text-xl font-semibold">Supabase Connection Test</h2>
       
       <div className="space-y-2">
+        <p><strong>Environment:</strong> {envVars.environment}</p>
         <p><strong>Supabase URL:</strong> {envVars.url}</p>
         <p><strong>Supabase Key:</strong> {envVars.keyLast4}</p>
       </div>
