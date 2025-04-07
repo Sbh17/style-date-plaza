@@ -42,7 +42,7 @@ export const useReviews = (salonId: string) => {
 
       // Transform data to match the Review interface and handle potential profile errors
       const formattedData: Review[] = data?.map(review => {
-        // Check if profiles is an error object and provide a default value
+        // Check if profiles is an error object or null and provide a default value
         const profileData = review.profiles && 
           typeof review.profiles === 'object' && 
           !('error' in review.profiles) ? 
