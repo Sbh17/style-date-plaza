@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Star, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface ReviewProfile {
   name: string;
@@ -130,15 +131,18 @@ const ReviewsList = ({ salonId, limit = 5 }: ReviewsListProps) => {
             <div className="flex items-center mb-2">
               <div className="mr-3">
                 {review.profiles?.profile_image ? (
-                  <img
-                    src={review.profiles.profile_image}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
+                  <Avatar>
+                    <AvatarImage src={review.profiles.profile_image} alt="Profile" />
+                    <AvatarFallback>
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
                 ) : (
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
+                  <Avatar>
+                    <AvatarFallback className="bg-primary/10">
+                      <User className="h-5 w-5 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
                 )}
               </div>
               <div>
